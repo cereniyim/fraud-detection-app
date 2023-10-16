@@ -50,19 +50,26 @@ class TransactionLoader:
     def load(
         self, start_block: int, end_block: int, time_interval: Optional[int] = None
     ) -> pd.DataFrame:
-        # erc20_txs = self._get_transfer_txs()
-        # tx_receipts = self._get_tx_receipts()
-        # filter tx receipts with the erc20 tx hashes
-        # make a list of dicts in the following format
-        # [{"tx_hash": "0x0", "value":1, "gas":2, "gas_price": 3}, {"tx_hash": "0x1", "value":1, "gas":2, "gas_price": 3}]
-        # make a dataframe and return it
-        pass
+        # TODO handle here time interval thing
+        transfer_txs = self._get_transfer_txs(start_block, end_block)
+        tx_gas = self._get_tx_receipts(start_block, end_block)
+        tx_hash2token_and_value = [
+            {"tx_hash": key, "asset": value[1], "value": value[0]}
+            for key, values in transfer_txs.items()
+            for value in values
+        ]
+        df = pd.DataFrame(tx_hash2token_and_value)
+        df["gas_used"] = df["tx_hash"].map(lambda x: tx_gas.get(x)["gasUsed"])
+        df["gas_price"] = df["tx_hash"].map(
+            lambda x: tx_gas.get(x)["effectiveGasPrice"]
+        )
+        return df
 
     def _get_transfer_txs(
         self,
         start_block: int,
         end_block: int,
-        tx_types: list[str] = ["external", "tx_type"],
+        tx_types: list[str] = ["external", "erc20"],
     ) -> dict[str, list[tuple[float, str]]]:
         payload = {
             "id": 1,

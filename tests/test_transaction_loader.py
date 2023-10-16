@@ -1,5 +1,9 @@
+from unittest.mock import Mock
+
+import pandas as pd
 import pytest
 import responses
+import pandas.testing as pdt
 
 from anomaly_detection.transaction_loader import (
     TransactionLoadingError,
@@ -198,3 +202,71 @@ def test_get_tx_receipts_success(get_tx_receipts_response):
             "gasUsed": int("0x6556", base=16),
         },
     }
+
+
+def test_load():
+    loader = TransactionLoader(_API_KEY)
+
+    loader._get_transfer_txs = Mock(
+        return_value={
+            "0x12345": [(25302.294916285482, "BLUR"), (2.895178921614788, "WETH")],
+            "0x67890": [
+                (11253986.52601218, "\u0428\u0410\u0419\u041b\u0423\u0428\u0410\u0419")
+            ],
+        }
+    )
+    loader._get_tx_receipts = Mock(
+        return_value={
+            "0x12345": {
+                "gasUsed": int("0x1bbf4", base=16),
+                "effectiveGasPrice": int("0xa87132cdf", base=16),
+            },
+            "0x67890": {
+                "gasUsed": int("0x2346f", base=16),
+                "effectiveGasPrice": int("0x54f2cec2f", base=16),
+            },
+            "not_a_transfer_hash": {
+                "effectiveGasPrice": int("0x1dc700121", base=16),
+                "gasUsed": int("0x6556", base=16),
+            },
+        }
+    )
+
+    res = loader.load(1, 2)
+
+    expected = pd.DataFrame(
+        [
+            {
+                "tx_hash": "0x12345",
+                "asset": "BLUR",
+                "value": 25302.294916285482,
+                "gas_used": 113652,
+                "gas_price": 45215853791,
+            },
+            {
+                "tx_hash": "0x12345",
+                "asset": "WETH",
+                "value": 2.895178921614788,
+                "gas_used": 113652,
+                "gas_price": 45215853791,
+            },
+            {
+                "tx_hash": "0x67890",
+                "asset": "\u0428\u0410\u0419\u041b\u0423\u0428\u0410\u0419",
+                "value": 11253986.52601218,
+                "gas_used": 144495,
+                "gas_price": 22803180591,
+            },
+        ]
+    )
+
+    pdt.assert_frame_equal(res, expected, check_like=True)
+
+
+# @pytest.mark.skip(reason="requires internet connection")
+def test_laod_integration():
+    loader = TransactionLoader(_API_KEY)
+    res = loader.load(start_block=18362260, end_block=18362263)  # query for 3 blocks
+
+    assert isinstance(res, pd.DataFrame)
+    assert len(res) > 0
