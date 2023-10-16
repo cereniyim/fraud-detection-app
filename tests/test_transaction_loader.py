@@ -78,8 +78,7 @@ def get_asset_transfers_response():
                     },
                     "metadata": {"blockTimestamp": "2023-09-21T08:15:47.000Z"},
                 },
-            ],
-            "pageKey": "b06d218b-2fa6-4bc0-bde2-495462ea58ef",
+            ]
         },
     }
 
@@ -239,21 +238,21 @@ def test_load():
         [
             {
                 "tx_hash": "0x12345",
-                "asset": "BLUR",
+                "token": "BLUR",
                 "value": 25302.294916285482,
                 "gas_used": 113652,
                 "gas_price": 45215853791,
             },
             {
                 "tx_hash": "0x12345",
-                "asset": "WETH",
+                "token": "WETH",
                 "value": 2.895178921614788,
                 "gas_used": 113652,
                 "gas_price": 45215853791,
             },
             {
                 "tx_hash": "0x67890",
-                "asset": "\u0428\u0410\u0419\u041b\u0423\u0428\u0410\u0419",
+                "token": "\u0428\u0410\u0419\u041b\u0423\u0428\u0410\u0419",
                 "value": 11253986.52601218,
                 "gas_used": 144495,
                 "gas_price": 22803180591,

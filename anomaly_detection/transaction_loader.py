@@ -73,7 +73,7 @@ class TransactionLoader:
         transfer_txs = self._get_transfer_txs(start_block, end_block)
         tx_gas = self._get_gas_values(start_block, end_block)
         tx_hash2token_and_value = [
-            {"tx_hash": key, "asset": value[1], "value": value[0]}
+            {"tx_hash": key, "value": value[0], "token": value[1]}
             for key, values in transfer_txs.items()
             for value in values
         ]
@@ -89,7 +89,6 @@ class TransactionLoader:
         self,
         start_block: int,
         end_block: int,
-        tx_types: list[str] = ["external", "erc20"],
     ) -> dict[str, list[tuple[float, str]]]:
         transfers = []
         payload = {
@@ -100,7 +99,7 @@ class TransactionLoader:
                 {
                     "fromBlock": hex(start_block),
                     "toBlock": hex(end_block),
-                    "category": tx_types,
+                    "category": ["external", "erc20"],
                     "excludeZeroValue": True,
                     "maxCount": hex(1000),
                 }
