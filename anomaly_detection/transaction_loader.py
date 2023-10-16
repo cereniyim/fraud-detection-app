@@ -93,6 +93,7 @@ class TransactionLoader:
         end_block: int,
         tx_types: list[str] = ["external", "erc20"],
     ) -> dict[str, list[tuple[float, str]]]:
+        transfers = []
         payload = {
             "id": 1,
             "jsonrpc": "2.0",
@@ -109,8 +110,18 @@ class TransactionLoader:
         }
         response = requests.post(self._uri, json=payload, headers=self._headers)
         self._handle_response_errors(response)
-        # TODO handle pagination here with the pageKey
-        transfers = response.json()["result"]["transfers"]
+
+        transfers.extend(response.json()["result"]["transfers"])
+        page_key = response.json()["result"].get("pageKey")
+
+        while page_key:
+            payload["params"][0]["pageKey"] = page_key
+            response = requests.post(self._uri, json=payload, headers=self._headers)
+            self._handle_response_errors(response)
+            response_data = response.json()["result"]
+            transfers.extend(response_data["transfers"])
+            page_key = response_data.get("pageKey")
+
         unique_tx_hashes = {t["hash"] for t in transfers}
         result = {tx_hash: [] for tx_hash in unique_tx_hashes}
         for transfer in transfers:

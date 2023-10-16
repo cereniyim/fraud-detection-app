@@ -1,3 +1,4 @@
+import os
 from unittest.mock import Mock
 
 import pandas as pd
@@ -277,5 +278,18 @@ def test_load_integration_time_interval():
     loader = TransactionLoader(_API_KEY)
     res = loader.load(time_interval=30)  # query for blocks in last 30 secs
 
+    assert isinstance(res, pd.DataFrame)
+    assert len(res) > 0
+
+
+@pytest.mark.skip(reason="requires internet connection")
+def test_load_integration_with_pagination():
+    start_block = 18183000
+    end_block = 18183050
+    # runs in a minute
+    loader = TransactionLoader(_API_KEY)
+    res = loader.load(start_block=start_block, end_block=end_block)
+
+    res.to_csv(f"{os.getcwd()}/transfer_tx_btw_{start_block}_{end_block}.csv")
     assert isinstance(res, pd.DataFrame)
     assert len(res) > 0
