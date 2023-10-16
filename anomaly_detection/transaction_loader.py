@@ -1,3 +1,4 @@
+import logging
 from math import ceil
 from typing import Optional
 
@@ -14,33 +15,6 @@ _BLOCK_PER_SECOND = 5 / 60
 
 
 class TransactionLoader:
-    """
-    1. Loads ERC20 and external transfer transactions for the given block range
-        in MVP version support only having a block range
-        get tx hashes from that
-        "alchemy_getAssetTransfers"
-        BEWARE of pagination here with pageKey str
-        keep only tx_hash and value dict here
-
-    load until there is no "pageKey" in ["result"]["pageKey"]
-
-    2. Loads tx receipts to get gas "alchemy_getTransactionReceipts" per block
-        keep only tx_hash, gasUsed, effectiveGasPrice here
-
-    BEWARE OF hex int conversion
-
-    filter tx receipts with the erc20 ones only return a list of dict with the following format
-
-    [{"tx_hash": "0x0", "value":1, "gas":2, "gas_price": 3}, {"tx_hash": "0x1", "value":1, "gas":2, "gas_price": 3}]
-
-    returns a df with tx, tx_value, gas and gas_price
-
-    3. if timeframe is passed then make an app
-
-    block_per_minute = 5
-    "latest"  - passed number * block_per_minute
-    """
-
     def __init__(self, api_key: str):
         self._uri = f"https://eth-mainnet.g.alchemy.com/v2/{api_key}"
         self._get_transfer_tx_method_name = "alchemy_getAssetTransfers"
@@ -57,6 +31,29 @@ class TransactionLoader:
         end_block: Optional[int] = None,
         time_interval: Optional[int] = None,
     ) -> pd.DataFrame:
+        """
+        Loads transfer ERC20 and external transactions from Ethereum Mainnet either for the
+            - given block range
+            - latest blocks within the specified time interval
+
+        Parameters
+        ----------
+        start_block: int
+            lower bound block number
+        end_block: int
+            upper bound block number (inclusive)
+        time_interval: int
+            time interval in seconds
+
+        Returns
+        -------
+        pd.DataFrame
+            Transactions with the amount transferred, gas usage and gas_price
+            Each row is unique per token transferred and tx_hash
+
+        tx_hash     |   value   |   token   |   gas_used    |   gas_price
+
+        """
         if time_interval is not None and (start_block is None and end_block is None):
             # if time interval is given, we get the start and end block from it
             last_blocks = ceil(time_interval * _BLOCK_PER_SECOND)
@@ -85,6 +82,7 @@ class TransactionLoader:
         df["gas_price"] = df["tx_hash"].map(
             lambda x: tx_gas.get(x)["effectiveGasPrice"]
         )
+        logging.info(f"Loaded transfer transactions from {start_block} to {end_block}")
         return df
 
     def _get_transfer_txs(
