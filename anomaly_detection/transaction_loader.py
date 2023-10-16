@@ -68,7 +68,7 @@ class TransactionLoader:
             )
             self._handle_response_errors(block_response)
             latest_block_number = int(block_response.json()["result"], base=16)
-            end_block = latest_block_number
+            end_block = latest_block_number - 1
             start_block = end_block - last_blocks + 1
         transfer_txs = self._get_transfer_txs(start_block, end_block)
         tx_gas = self._get_gas_values(start_block, end_block)

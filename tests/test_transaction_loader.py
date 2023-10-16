@@ -275,7 +275,6 @@ def test_load_integration():
 @pytest.mark.skip(reason="requires internet connection")
 def test_load_integration_time_interval():
     loader = TransactionLoader(_API_KEY)
-    # TODO check this test
     res = loader.load(time_interval=30)  # query for blocks in last 30 secs
 
     assert isinstance(res, pd.DataFrame)
