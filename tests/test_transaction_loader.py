@@ -263,7 +263,7 @@ def test_load():
     pdt.assert_frame_equal(res, expected, check_like=True)
 
 
-# @pytest.mark.skip(reason="requires internet connection")
+@pytest.mark.skip(reason="requires internet connection")
 def test_load_integration():
     loader = TransactionLoader(_API_KEY)
     res = loader.load(start_block=18362260, end_block=18362263)  # query for 3 blocks

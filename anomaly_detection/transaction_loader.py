@@ -32,17 +32,17 @@ class TransactionLoader:
         time_interval: Optional[int] = None,
     ) -> pd.DataFrame:
         """
-        Loads transfer ERC20 and external transactions from Ethereum Mainnet either for the
+        Loads ERC20 and external Transfer transactions from Ethereum Mainnet either for the
             - given block range
             - latest blocks within the specified time interval
 
         Parameters
         ----------
-        start_block: int
+        start_block: Optional[int]
             lower bound block number
-        end_block: int
+        end_block: Optional[int]
             upper bound block number (inclusive)
-        time_interval: int
+        time_interval: Optional[int]
             time interval in seconds
 
         Returns
