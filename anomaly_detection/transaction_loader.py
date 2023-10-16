@@ -88,8 +88,34 @@ class TransactionLoader:
             result[transfer["hash"]].append((transfer["value"], transfer["asset"]))
         return result
 
-    def _get_tx_receipts(self) -> dict:
-        pass
+    def _get_tx_receipts(
+        self,
+        start_block: int,
+        end_block: int,
+    ) -> dict:
+        params = [
+            {"blockNumber": hex(block_number)}
+            for block_number in range(start_block, end_block + 1)
+        ]
+        payload = {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "method": self._get_tx_receipts_method_name,
+        }
+        receipts = []
+        for param in params:
+            payload["params"] = [param]
+            response = requests.post(self._uri, json=payload, headers=self._headers)
+            self._handle_response_errors(response)
+            receipts.extend(response.json()["result"]["receipts"])
+        result = {
+            r["transactionHash"]: {
+                "gasUsed": int(r["gasUsed"], base=16),
+                "effectiveGasPrice": int(r["effectiveGasPrice"], base=16),
+            }
+            for r in receipts
+        }
+        return result
 
     def _handle_response_errors(self, response: Response):
         """
@@ -98,4 +124,4 @@ class TransactionLoader:
         try:
             response.raise_for_status()
         except HTTPError:
-            raise TransactionLoadingError("Error in loading data from ALchemy")
+            raise TransactionLoadingError("Error in loading data from Alchemy")
