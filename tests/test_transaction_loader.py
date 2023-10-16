@@ -1,9 +1,9 @@
 from unittest.mock import Mock
 
 import pandas as pd
+import pandas.testing as pdt
 import pytest
 import responses
-import pandas.testing as pdt
 
 from anomaly_detection.transaction_loader import (
     TransactionLoadingError,
@@ -263,10 +263,19 @@ def test_load():
     pdt.assert_frame_equal(res, expected, check_like=True)
 
 
-# @pytest.mark.skip(reason="requires internet connection")
+@pytest.mark.skip(reason="requires internet connection")
 def test_laod_integration():
     loader = TransactionLoader(_API_KEY)
     res = loader.load(start_block=18362260, end_block=18362263)  # query for 3 blocks
+
+    assert isinstance(res, pd.DataFrame)
+    assert len(res) > 0
+
+
+@pytest.mark.skip(reason="requires internet connection")
+def test_load_integration_time_interval():
+    loader = TransactionLoader(_API_KEY)
+    res = loader.load(time_interval=30)  # query for blocks in last 30 secs
 
     assert isinstance(res, pd.DataFrame)
     assert len(res) > 0

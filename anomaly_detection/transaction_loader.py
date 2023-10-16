@@ -1,3 +1,4 @@
+from math import ceil
 from typing import Optional
 
 import pandas as pd
@@ -7,6 +8,9 @@ from requests import Response, HTTPError
 
 class TransactionLoadingError(Exception):
     pass
+
+
+_BLOCK_PER_SECOND = 5 / 60
 
 
 class TransactionLoader:
@@ -48,9 +52,27 @@ class TransactionLoader:
         }
 
     def load(
-        self, start_block: int, end_block: int, time_interval: Optional[int] = None
+        self,
+        start_block: Optional[int] = None,
+        end_block: Optional[int] = None,
+        time_interval: Optional[int] = None,
     ) -> pd.DataFrame:
-        # TODO handle here time interval thing
+        if time_interval is not None and (start_block is None and end_block is None):
+            # if time interval is given, we get the start and end block from it
+            last_blocks = ceil(time_interval * _BLOCK_PER_SECOND)
+            block_response = requests.post(
+                self._uri,
+                json={
+                    "jsonrpc": "2.0",
+                    "method": "eth_blockNumber",
+                    "params": [],
+                    "id": 1,
+                },
+            )
+            self._handle_response_errors(block_response)
+            latest_block_number = int(block_response.json()["result"], base=16)
+            end_block = latest_block_number
+            start_block = end_block - last_blocks + 1
         transfer_txs = self._get_transfer_txs(start_block, end_block)
         tx_gas = self._get_tx_receipts(start_block, end_block)
         tx_hash2token_and_value = [
