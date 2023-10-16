@@ -71,7 +71,7 @@ class TransactionLoader:
             end_block = latest_block_number
             start_block = end_block - last_blocks + 1
         transfer_txs = self._get_transfer_txs(start_block, end_block)
-        tx_gas = self._get_tx_receipts(start_block, end_block)
+        tx_gas = self._get_gas_values(start_block, end_block)
         tx_hash2token_and_value = [
             {"tx_hash": key, "asset": value[1], "value": value[0]}
             for key, values in transfer_txs.items()
@@ -126,7 +126,7 @@ class TransactionLoader:
             result[transfer["hash"]].append((transfer["value"], transfer["asset"]))
         return result
 
-    def _get_tx_receipts(
+    def _get_gas_values(
         self,
         start_block: int,
         end_block: int,

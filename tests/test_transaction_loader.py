@@ -178,7 +178,7 @@ def test_get_transfer_txs_failed():
 
 
 @responses.activate
-def test_get_tx_receipts_success(get_tx_receipts_response):
+def test_get_gas_values(get_tx_receipts_response):
     responses.add(
         responses.POST,
         f"https://eth-mainnet.g.alchemy.com/v2/{_API_KEY}",
@@ -187,7 +187,7 @@ def test_get_tx_receipts_success(get_tx_receipts_response):
     )
 
     loader = TransactionLoader(_API_KEY)
-    result = loader._get_tx_receipts(1, 3)
+    result = loader._get_gas_values(1, 3)
 
     assert result == {
         "0x12345": {
@@ -216,7 +216,7 @@ def test_load():
             ],
         }
     )
-    loader._get_tx_receipts = Mock(
+    loader._get_gas_values = Mock(
         return_value={
             "0x12345": {
                 "gasUsed": int("0x1bbf4", base=16),
@@ -264,8 +264,8 @@ def test_load():
     pdt.assert_frame_equal(res, expected, check_like=True)
 
 
-@pytest.mark.skip(reason="requires internet connection")
-def test_laod_integration():
+# @pytest.mark.skip(reason="requires internet connection")
+def test_load_integration():
     loader = TransactionLoader(_API_KEY)
     res = loader.load(start_block=18362260, end_block=18362263)  # query for 3 blocks
 
@@ -276,6 +276,7 @@ def test_laod_integration():
 @pytest.mark.skip(reason="requires internet connection")
 def test_load_integration_time_interval():
     loader = TransactionLoader(_API_KEY)
+    # TODO check this test
     res = loader.load(time_interval=30)  # query for blocks in last 30 secs
 
     assert isinstance(res, pd.DataFrame)
@@ -290,6 +291,6 @@ def test_load_integration_with_pagination():
     loader = TransactionLoader(_API_KEY)
     res = loader.load(start_block=start_block, end_block=end_block)
 
-    res.to_csv(f"{os.getcwd()}/transfer_tx_btw_{start_block}_{end_block}.csv")
+    # res.to_csv(f"{os.getcwd()}/transfer_tx_btw_{start_block}_{end_block}.csv")
     assert isinstance(res, pd.DataFrame)
     assert len(res) > 0
