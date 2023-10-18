@@ -1,9 +1,11 @@
+import os
+
 import pandas as pd
+import pandas.testing as pdt
 import pytest
 from sklearn.ensemble import IsolationForest
 
 from anomaly_detection.anomaly_detector import AnomalyDetector, ModelMetaData
-import pandas.testing as pdt
 
 
 @pytest.fixture()
@@ -49,15 +51,17 @@ def test_process_data(raw_data, processed_data):
 
 
 def test_fit(processed_data):
-    res = AnomalyDetector().fit(processed_data)
+    detector = AnomalyDetector()
+    res = detector.fit(processed_data)
 
     assert isinstance(res, ModelMetaData)
     assert isinstance(res.estimator, IsolationForest)
     assert isinstance(res.model_path, str)
+    assert len(os.listdir(detector._models_directory)) > 1
 
 
 def test_predict_from_pretrained_model(processed_data):
-    res = AnomalyDetector().predict(data=processed_data, pre_trained=True)
+    res = AnomalyDetector().predict(data=processed_data, use_pre_trained_model=True)
 
     assert isinstance(res, pd.DataFrame)
     assert "anomaly_score" in res.columns

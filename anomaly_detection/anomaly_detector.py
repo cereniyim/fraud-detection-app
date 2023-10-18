@@ -7,7 +7,6 @@ from pathlib import Path
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
-
 _WEI_TO_ETH = 10**18
 
 
@@ -40,9 +39,9 @@ class AnomalyDetector:
         self,
         data: pd.DataFrame,
         model_metadata: ModelMetaData = None,
-        pre_trained: bool = False,
+        use_pre_trained_model: bool = False,
     ) -> pd.DataFrame:
-        if pre_trained:
+        if use_pre_trained_model:
             latest_model_filename = os.listdir(self._models_directory)[0]
             with open(
                 str(self._models_directory / latest_model_filename), "rb"
@@ -51,7 +50,8 @@ class AnomalyDetector:
         else:
             estimator = model_metadata.estimator
         data["anomaly"] = estimator.predict(data[self._features])
-        data["anomaly_score"] = estimator.score_samples(data[self._features])
+        data["anomaly_score"] = -1 * estimator.score_samples(data[self._features])
+        # to align scoring logic with the original paper
         return data
 
     @staticmethod
