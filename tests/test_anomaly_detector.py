@@ -33,7 +33,7 @@ def processed_data():
 
 def test_process_data(raw_data, processed_data):
     detector = AnomalyDetector()
-    res = detector._process_data(raw_data)
+    res = detector.process_data(raw_data)
 
     pdt.assert_frame_equal(processed_data, res, check_dtype=False)
 
