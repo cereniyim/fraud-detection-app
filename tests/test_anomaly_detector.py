@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import IsolationForest
 
-from anomaly_detection.model_trainer import AnomalyDetector, ModelMetaData
+from anomaly_detection.anomaly_detector import AnomalyDetector, ModelMetaData
 import pandas.testing as pdt
 
 
