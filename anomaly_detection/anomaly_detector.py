@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.ensemble import IsolationForest
 
 
-_WEI_TO_ETH = 10 ** 18
+_WEI_TO_ETH = 10**18
 
 
 @dataclass
@@ -32,14 +32,21 @@ class AnomalyDetector:
         timestamp = int(datetime.now().timestamp())
         filename = f"model_{timestamp}.pkl"
         model_path = str(self._models_directory / filename)
-        with open(model_path, 'wb') as model_file:
+        with open(model_path, "wb") as model_file:
             pickle.dump(fitted_estimator, model_file)
         return ModelMetaData(estimator=fitted_estimator, model_path=model_path)
 
-    def predict(self, data: pd.DataFrame, model_metadata: ModelMetaData = None, pre_trained: bool = False) -> pd.DataFrame:
+    def predict(
+        self,
+        data: pd.DataFrame,
+        model_metadata: ModelMetaData = None,
+        pre_trained: bool = False,
+    ) -> pd.DataFrame:
         if pre_trained:
             latest_model_filename = os.listdir(self._models_directory)[0]
-            with open(str(self._models_directory / latest_model_filename), "rb") as model_file:
+            with open(
+                str(self._models_directory / latest_model_filename), "rb"
+            ) as model_file:
                 estimator = pickle.load(model_file)
         else:
             estimator = model_metadata.estimator
@@ -49,7 +56,13 @@ class AnomalyDetector:
 
     @staticmethod
     def process_data(tx_data: pd.DataFrame) -> pd.DataFrame:
-        tx_data = tx_data.dropna(subset=["token", "value", "gas_used", "gas_price"], how="any")
-        tx_data = tx_data.drop_duplicates().reset_index(drop=True)  # just in case data has any duplicates
-        tx_data["gas_cost_in_eth"] = (tx_data["gas_used"] * tx_data["gas_price"]) / _WEI_TO_ETH
+        tx_data = tx_data.dropna(
+            subset=["token", "value", "gas_used", "gas_price"], how="any"
+        )
+        tx_data = tx_data.drop_duplicates().reset_index(
+            drop=True
+        )  # just in case data has any duplicates
+        tx_data["gas_cost_in_eth"] = (
+            tx_data["gas_used"] * tx_data["gas_price"]
+        ) / _WEI_TO_ETH
         return tx_data
