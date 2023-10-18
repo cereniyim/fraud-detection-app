@@ -54,7 +54,7 @@ def test_predict_from_pretrained_model(processed_data):
     assert "anomaly" in res.columns
 
 
-def test_fit_and_predict(processed_data):
+def test_predict_from_model_metadata(processed_data):
     fitted_model = IsolationForest(
         random_state=42,
         contamination=0.001).fit(processed_data[["value", "gas_cost_in_eth"]])
