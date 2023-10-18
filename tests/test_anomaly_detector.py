@@ -78,3 +78,15 @@ def test_predict_from_model_metadata(processed_data):
     assert isinstance(res, pd.DataFrame)
     assert "anomaly_score" in res.columns
     assert "anomaly" in res.columns
+
+
+@pytest.mark.skip(reason="test to save a model")
+def test_fit_save_pre_trained_model():
+    from anomaly_detection.transaction_loader import TransactionLoader
+
+    loader = TransactionLoader("t-5jnnHotwe9R3vHAUPcfOY9eYNufREN")
+    data = loader.load(start_block=18183000, end_block=18183050)
+
+    detector = AnomalyDetector()
+    cleaned_data = detector.process_data(data)
+    detector.fit(cleaned_data)
