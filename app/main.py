@@ -20,7 +20,7 @@ def post_item(
         transactions = loader.load(
             anomaly_detection_input.start_block,
             anomaly_detection_input.end_block,
-            anomaly_detection_input.time_interval,
+            anomaly_detection_input.time_interval_in_seconds,
         )
     except TransactionLoadingError as e:
         raise HTTPException(status_code=500, detail=str(e))

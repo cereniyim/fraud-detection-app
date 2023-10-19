@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class AnomalyDetectionInput(BaseModel):
     start_block: Optional[int] = None
     end_block: Optional[int] = None
-    time_interval: Optional[int] = None
+    time_interval_in_seconds: Optional[int] = 0
     use_pre_trained_model: bool = False
 
 

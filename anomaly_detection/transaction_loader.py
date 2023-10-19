@@ -29,7 +29,7 @@ class TransactionLoader:
         self,
         start_block: Optional[int] = None,
         end_block: Optional[int] = None,
-        time_interval: Optional[int] = None,
+        time_interval: int = 0,
     ) -> pd.DataFrame:
         """
         Loads ERC20 and external Transfer transactions from Ethereum Mainnet either for the
@@ -54,7 +54,7 @@ class TransactionLoader:
         tx_hash     |   value   |   token   |   gas_used    |   gas_price
 
         """
-        if time_interval is not None and (start_block is None and end_block is None):
+        if time_interval > 0:
             # if time interval is given, we get the start and end block from it
             last_blocks = ceil(time_interval * _BLOCK_PER_SECOND)
             block_response = requests.post(
