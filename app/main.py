@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 
-from anomaly_detection.anomaly_detector import AnomalyDetector
+from anomaly_detection.anomaly_detector import AnomalyDetector, ModelLoadingError
 from anomaly_detection.transaction_loader import (
     TransactionLoader,
     TransactionLoadingError,
@@ -8,7 +8,12 @@ from anomaly_detection.transaction_loader import (
 from app.data_models import AnomalyDetectionInput, AnomalyDetectionOutput
 
 
-app = FastAPI(responses={500: {"description": "Error during anomaly detection"}})
+app = FastAPI(
+    responses={
+        500: {"description": "Error during anomaly detection"},
+        404: {"description": "Model not found in the registry"},
+    }
+)
 
 
 @app.post("/anomaly_detection/")
@@ -29,10 +34,13 @@ def post_item(
     processed_transactions = anomaly_detector.process_data(transactions)
 
     if anomaly_detection_input.use_pre_trained_model:
-        predicted_transactions = anomaly_detector.predict(
-            data=processed_transactions,
-            use_pre_trained_model=anomaly_detection_input.use_pre_trained_model,
-        )
+        try:
+            predicted_transactions = anomaly_detector.predict(
+                data=processed_transactions,
+                use_pre_trained_model=anomaly_detection_input.use_pre_trained_model,
+            )
+        except ModelLoadingError as e:
+            raise HTTPException(status_code=404, detail=str(e))
     else:
         model_metadata = anomaly_detector.fit(processed_transactions)
         predicted_transactions = anomaly_detector.predict(
