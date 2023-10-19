@@ -43,8 +43,8 @@ class AnomalyDetector:
         use_pre_trained_model: bool = False,
     ) -> pd.DataFrame:
         if use_pre_trained_model:
-            logging.info("Using pre-trained model for anomaly detection")
             latest_model_filename = os.listdir(self._models_directory)[0]
+            logging.info(f"Using pre-trained model for anomaly detection, latest model is {latest_model_filename}.")
             with open(
                 str(self._models_directory / latest_model_filename), "rb"
             ) as model_file:

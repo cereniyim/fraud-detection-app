@@ -49,7 +49,7 @@ def post_item(
                 value=row["value"],
                 token=row["token"],
                 gas_cost=row["gas_cost_in_eth"],
-                anomaly_score=-1 * row["anomaly_score"],
+                anomaly_score=row["anomaly_score"],
                 etherscan_link=f"https://etherscan.io/tx/{row['tx_hash']}",
             )
         )
