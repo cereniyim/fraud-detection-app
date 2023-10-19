@@ -28,9 +28,10 @@ def post_item(
     anomaly_detector = AnomalyDetector()
     processed_transactions = anomaly_detector.process_data(transactions)
 
-    if anomaly_detection_input.pre_trained:
+    if anomaly_detection_input.use_pre_trained_model:
         predicted_transactions = anomaly_detector.predict(
-            data=processed_transactions, pre_trained=anomaly_detection_input.pre_trained
+            data=processed_transactions,
+            use_pre_trained_model=anomaly_detection_input.use_pre_trained_model,
         )
     else:
         model_metadata = anomaly_detector.fit(processed_transactions)

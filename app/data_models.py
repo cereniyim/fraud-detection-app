@@ -7,7 +7,7 @@ class AnomalyDetectionInput(BaseModel):
     start_block: Optional[int] = None
     end_block: Optional[int] = None
     time_interval: Optional[int] = None
-    pre_trained: bool = False
+    use_pre_trained_model: bool = False
 
 
 class AnomalyDetectionOutput(BaseModel):
