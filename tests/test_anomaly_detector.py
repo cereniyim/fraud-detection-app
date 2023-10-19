@@ -23,6 +23,8 @@ def raw_data():
 
 @pytest.fixture()
 def processed_data():
+    gas_used = [50000, 60000, 70000]
+    gas_price = [10, 12, 15]
     return pd.DataFrame(
         {
             "tx_hash": ["hash1", "hash2", "hash3"],
@@ -32,12 +34,10 @@ def processed_data():
                 3000000,
             ],
             "token": ["TokenA", "TokenB", "TokenA"],
-            "gas_used": [50000, 60000, 70000],
-            "gas_price": [10, 12, 15],
+            "gas_used": gas_used,
+            "gas_price": gas_price,
             "gas_cost_in_eth": [
-                5000 * 10 / (10**18),
-                6000 * 12 / (10**18),
-                70000 * 15 / (10**18),
+                gas * price / (10**18) for gas, price in zip(gas_used, gas_price)
             ],
         }
     )

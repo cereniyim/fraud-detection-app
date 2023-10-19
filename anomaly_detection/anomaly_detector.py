@@ -1,3 +1,4 @@
+import logging
 import os
 import pickle
 from dataclasses import dataclass
@@ -42,6 +43,7 @@ class AnomalyDetector:
         use_pre_trained_model: bool = False,
     ) -> pd.DataFrame:
         if use_pre_trained_model:
+            logging.info("Using pre-trained model for anomaly detection")
             latest_model_filename = os.listdir(self._models_directory)[0]
             with open(
                 str(self._models_directory / latest_model_filename), "rb"
