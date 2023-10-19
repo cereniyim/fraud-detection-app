@@ -11,6 +11,10 @@ from sklearn.ensemble import IsolationForest
 _WEI_TO_ETH = 10**18
 
 
+class ModelLoadingError(Exception):
+    pass
+
+
 @dataclass
 class ModelMetaData:
     estimator: IsolationForest
@@ -25,6 +29,9 @@ class AnomalyDetector:
         )
         self._features = ["value", "gas_cost_in_eth"]
         self._models_directory = Path(__file__).parents[0] / "models"
+        if not self._models_directory.exists():
+            # local filesystem serves as a registry, so create the directory upon instantiation
+            os.mkdir(self._models_directory)
 
     def fit(self, data: pd.DataFrame) -> ModelMetaData:
         features = data[self._features]
@@ -42,9 +49,16 @@ class AnomalyDetector:
         model_metadata: ModelMetaData = None,
         use_pre_trained_model: bool = False,
     ) -> pd.DataFrame:
-        if use_pre_trained_model:
-            latest_model_filename = sorted(os.listdir(self._models_directory))[-1]
-            logging.info(f"Using pre-trained model for anomaly detection, latest model is {latest_model_filename}.")
+        models = os.listdir(self._models_directory)
+        if use_pre_trained_model and len(models) == 0:
+            raise ModelLoadingError(
+                "No models found in the registry, train a model first to use a pre-trained one."
+            )
+        elif use_pre_trained_model and len(models) > 0:
+            latest_model_filename = sorted(models)[-1]
+            logging.info(
+                f"Using pre-trained model for anomaly detection, latest model is {latest_model_filename}."
+            )
             with open(
                 str(self._models_directory / latest_model_filename), "rb"
             ) as model_file:
