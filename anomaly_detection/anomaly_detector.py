@@ -33,7 +33,7 @@ class AnomalyDetector:
             # local filesystem serves as a registry, so create the directory upon instantiation
             os.mkdir(self._models_directory)
 
-    def fit(self, data: pd.DataFrame) -> ModelMetaData:
+    def fit_and_save_model(self, data: pd.DataFrame) -> ModelMetaData:
         features = data[self._features]
         fitted_estimator = self._estimator.fit(features)
         timestamp = int(datetime.now().timestamp())

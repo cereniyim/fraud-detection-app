@@ -63,9 +63,9 @@ def test_process_data(raw_data, processed_data):
 
 
 @pytest.mark.usefixtures("remove_models")
-def test_fit(processed_data):
+def test_fit_and_save_model(processed_data):
     detector = AnomalyDetector()
-    res = detector.fit(processed_data)
+    res = detector.fit_and_save_model(processed_data)
 
     assert isinstance(res, ModelMetaData)
     assert isinstance(res.estimator, IsolationForest)
@@ -85,7 +85,7 @@ def test_predict_from_pretrained_model_raises(processed_data):
 @pytest.mark.usefixtures("remove_models")
 def test_predict_from_pretrained_model(processed_data):
     detector = AnomalyDetector()
-    _ = detector.fit(processed_data)
+    _ = detector.fit_and_save_model(processed_data)
     res = AnomalyDetector().predict(data=processed_data, use_pre_trained_model=True)
 
     assert isinstance(res, pd.DataFrame)

@@ -45,7 +45,7 @@ def post_item(
         except ModelLoadingError as e:
             raise HTTPException(status_code=404, detail=str(e))
     else:
-        model_metadata = anomaly_detector.fit(processed_transactions)
+        model_metadata = anomaly_detector.fit_and_save_model(processed_transactions)
         predicted_transactions = anomaly_detector.predict(
             data=processed_transactions, model_metadata=model_metadata
         )
