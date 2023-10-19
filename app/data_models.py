@@ -12,8 +12,8 @@ class AnomalyDetectionInput(BaseModel):
 
 class AnomalyDetectionOutput(BaseModel):
     transaction_hash: str
-    value: float
+    value: str
     token: str
-    gas_cost: float
-    anomaly_score: float
+    gas_cost: str
+    anomaly_score: str
     etherscan_link: str

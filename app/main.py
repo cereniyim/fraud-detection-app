@@ -47,10 +47,10 @@ def post_item(
         results.append(
             AnomalyDetectionOutput(
                 transaction_hash=row["tx_hash"],
-                value=row["value"],
+                value=f"{row['value']:,.2f}",
                 token=row["token"],
-                gas_cost=row["gas_cost_in_eth"],
-                anomaly_score=row["anomaly_score"],
+                gas_cost=f"{row['gas_cost_in_eth']:.8f}",
+                anomaly_score=f"{row['anomaly_score']:.4f}",
                 etherscan_link=f"https://etherscan.io/tx/{row['tx_hash']}",
             )
         )
