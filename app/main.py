@@ -20,6 +20,9 @@ app = FastAPI(
 def post_item(
     anomaly_detection_input: AnomalyDetectionInput,
 ) -> list[AnomalyDetectionOutput]:
+    """
+    Detect anomalous transactions on Ethereum Mainnet
+    """
     loader = TransactionLoader(api_key="t-5jnnHotwe9R3vHAUPcfOY9eYNufREN")
     try:
         transactions = loader.load(

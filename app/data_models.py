@@ -4,6 +4,14 @@ from pydantic import BaseModel
 
 
 class AnomalyDetectionInput(BaseModel):
+    """
+    Input model for anomaly detection.
+
+    Either (`start_block`, `end_block`) or `time_interval_in_seconds` are required.
+
+    If `time_interval_in_seconds` is given, then app runs for the latest blocks within the time interval.
+
+    """
     start_block: Optional[int] = None
     end_block: Optional[int] = None
     time_interval_in_seconds: Optional[int] = 0
