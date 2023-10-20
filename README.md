@@ -1,2 +1,204 @@
-# anomaly-detection-model
-Blockchain Transactions Anomaly Detection Model
+# anomaly-detection-app
+Ethereum Mainnet Anomalous Transactions Detection App
+
+## App Summary
+This app detects anomalous transactions on Ethereum Mainnet for the given block range or
+time interval. Current scope is ERC20 external token transfers.
+
+![app_flow](images/app_flow.png)
+
+You can interact with an app through the Swagger (link provided below) or curl requests.
+
+## How To Use the App
+**Pre-requisites**: Docker engine running locally. You can find the instructions [here](https://docs.docker.com/engine/install/)
+to install Docker on your local machine.
+
+**Build Docker image**: It will create the environment to run the app
+```shell script
+docker build -t anomaly-detection-app:0.0.1 .
+```
+
+**Spawn container**: It will start the app
+```shell script
+docker run -d -p 8000:8000 anomaly-detection-app:0.0.1
+```
+You can access the app and its documentation on http://0.0.0.0:8000/docs or interact with it from CLI.
+
+**Interact from CLI**
+```shell script
+curl -X 'POST' \
+  'http://0.0.0.0:8000/anomaly_detection/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "start_block": <start_block>,
+  "end_block": <end_block>,
+  "time_interval_in_seconds":0,
+  "use_pre_trained_model": false 
+}'
+```
+App accepts 4 parameters:
+- start_block
+- end_block
+- time_interval_in_seconds: defaults to 0
+- use_pre_trained_model: defaults to False
+
+To query with the time interval, set `time_interval_in_seconds` to an integer greater than 0. This will override using 
+the app with the block range.
+
+To use a pre-trained model, set `use_pre_trained_model` to `true`.
+
+App first gets the data from onchain and then detects anomalous transactions with 2 features
+- transaction value per token
+- gas cost (gas_price * gas_used_by_transaction)
+
+App requires model training upon start.
+
+To stop the app, run
+
+```shell script
+docker stop $(docker ps -a -q)
+```
+## Interpretation of some of the predictions 
+To illustrate how ML model behind the app works, I used
+- 18183000-18183050 block range as training data 
+- 18370728-18370788 block range as test dataset
+
+The distribution of features in the log scale is as follows
+
+![inference_features_distribution.png](images/inference_features_distribution.png)
+
+There are outliers in terms of high token value and gas cost.
+
+The model detects extremely high token value transactions as anomalies, dark blue points are outliers.
+
+![predictions.png](images/predictions.png)
+
+When we filter by the txs that are labeled as anomalies, we get txs with not-so-commonly used tokens like
+- [POKEMON 2.0](https://etherscan.io/token/0x73d5b2f081cedf63a9e660a22088c7724af78774)
+- [KuKu](https://etherscan.io/token/0x27206f5a9afd0c51da95f20972885545d3b33647)
+
+where there are only few holder of those tokens.
+
+Since our training data is indexed by unique transaction_hash and token pair, the model only detects certain leg of the 
+transaction as anomalous. For instance [this tx](https://etherscan.io/tx/0x51949a40deeb804fdc686e2504914c3f37063b1d5b628b5639fae57fa8a54c75) 
+consists of trusted tokens and the POKEMON 2.0 token: USDT -> WETH -> POKEMON 2.0
+
+Our model only detects POKEMON 2.0 transfer as anomalous. However, it is safe to extrapolate to the entire transaction since 
+we want to protect users to exchange malicious tokens.
+
+![img.png](images/anomalous_txs.png)
+
+## Key Architectural Decisions
+Querying for every transaction on Ethereum Mainnet seemed suboptimal since they also include token mints, burns or 
+internal contract transactions and so on.
+
+So, I narrowed down the problem scope to use ERC20 token transfers only.
+
+Moreover, since "better than a random" model is emphasized in the requirements, I only included 2 features:
+
+
+### Alchemy as the source data provider
+I first explored several data source providers (Alchemy and Etherscan). 
+I chose Alchemy API because it offers endpoints for efficient querying and filtering of Ethereum transactions. 
+
+I used [getAssetTransfers](https://docs.alchemy.com/reference/alchemy-getassettransfers) endpoint to get ERC20 token 
+transfers. I also excluded internal transactions so that I only get transactions initiated by the users.
+
+To get each gas spent for the transactions I used [getTransactionReceipts](https://docs.alchemy.com/reference/alchemy-gettransactionreceipts) endpoint.
+- transaction value per token
+- gas cost in ETH
+
+### `IsolationForest` as the underlying algorithm
+I researched on the anomaly detection problem first and most common statistical approaches used. Given the above features, I decided 
+to approach this problem as an unsupervised machine learning problem.  
+I chose Isolation Forest because of its decision tree-based, non-parametric and easy-to-understand nature.
+
+I used [this blog post](https://towardsdatascience.com/isolation-forest-the-anomaly-detection-algorithm-any-data-scientist-should-know-1a99622eec2d) and [the original paper](https://www.researchgate.net/publication/224384174_Isolation_Forest) to understand how algorith works.
+
+The algorithm focuses on detecting and isolating anomalous samples in a decision tree as early as possible. As early as 
+possible here suggests that when fed into a decision tree an anomalous data point will be closer to the root node compared 
+to common samples. By default, it constructs 100 decision trees and takes 256 samples to feed into each tree.
+
+After constructing the trees, it measures the distance between the leaf node and the root node for each sample, then
+takes the average of the distance measures per sample. Lesser the average distance the more likely that a sample is 
+anomalous (or outlier).
+
+I used the default parameters, only set the `contamination` parameter to 0.001 by intuition. This parameter controls
+how much of anomalies are expected for the domain problem.
+
+TODO insert here a tree image
+
+### Local Filesystem as a Model Reistry
+Requirements mentioned using the latest pre-trained model, that requires app saving the model either in memory or some 
+storage solution.
+
+Considering the time-box specification of the assignment, I chose local filesystem to show how a model registry could be 
+integrated into this app. 
+
+### Making a POST Endpoint and Containerization with Docker
+I wrapped the core data fetching and model training & inference process in an API endpoint. Moreover, I used fastAPI as 
+the framework because of its nice documentation and data validation capabilities.
+ 
+I used Docker to create the required environment and the app. This enables users to install the app on any machine as a 
+further improvement area.
+
+## Further System Improvements
+From system design perspective, a real-world implementation of this problem would use a database and model registry to 
+track latest trained models. Mlflow can be one option for that. 
+
+Also, this database could serve as storage for training
+datasets as well.
+
+From implementation perspective
+- store API key in a secret manager and retrieve key from there
+- pre-process data in a separate class so that AnomalyDetector have single responsibility around models
+- implement more detailed error handling for loading transactions and data validation (e.g. checking for the logical 
+ordering of start_block and end_block parameters)
+- aggregate return value from the endpoint per transaction hash so that it is more informative
+
+## Setup Local Environment & Run Unit Tests
+Change directory to your local repository
+```shell script
+cd <path-to-your-local-repository>
+```
+
+Create conda environment
+```shell script
+conda create --name anomaly-detection-env python=3.9.18
+```
+
+Activate environment
+```shell script
+conda activate anomaly-detection-env
+```
+
+Install requirements
+```shell script
+pip install -r requirements.txt
+```
+
+Add repository path to PYTHONPATH 
+```shell script
+export PYTHONPATH=<path-to-your-repo-root>
+```
+
+Run unit tests
+```shell script
+py.test tests
+```
+
+## Run Notebook
+To run notebooks update environment with the following commands
+```
+pip install jupyter
+pip install plotly
+pip install seaborn
+pip intall pydotplus
+conda install python-graphviz
+```
+
+**To delete local deployment**
+```shell script
+docker stop $(docker ps -a -q)
+```
