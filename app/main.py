@@ -23,7 +23,7 @@ def post_item(
     """
     Detect anomalous transactions on Ethereum Mainnet
     """
-    loader = TransactionLoader(api_key="t-5jnnHotwe9R3vHAUPcfOY9eYNufREN")
+    loader = TransactionLoader()
     try:
         transactions = loader.load(
             anomaly_detection_input.start_block,
