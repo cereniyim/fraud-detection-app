@@ -12,6 +12,7 @@ class AnomalyDetectionInput(BaseModel):
     If `time_interval_in_seconds` is given, then app runs for the latest blocks within the time interval.
 
     """
+
     start_block: Optional[int] = None
     end_block: Optional[int] = None
     time_interval_in_seconds: Optional[int] = 0
