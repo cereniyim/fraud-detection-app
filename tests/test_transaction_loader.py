@@ -11,8 +11,6 @@ from anomaly_detection.transaction_loader import (
     TransactionLoader,
 )
 
-_API_KEY = "t-5jnnHotwe9R3vHAUPcfOY9eYNufREN"
-
 
 @pytest.fixture()
 def get_asset_transfers_response():
@@ -147,12 +145,12 @@ def get_tx_receipts_response():
 def test_get_transfer_txs_success(get_asset_transfers_response):
     responses.add(
         responses.POST,
-        f"https://eth-mainnet.g.alchemy.com/v2/{_API_KEY}",
+        f"https://eth-mainnet.g.alchemy.com/v2/some_key",
         json=get_asset_transfers_response,
         status=200,
     )
 
-    loader = TransactionLoader(_API_KEY)
+    loader = TransactionLoader("some_key")
     result = loader._get_transfer_txs(1, 2)
 
     assert result == {
@@ -167,25 +165,25 @@ def test_get_transfer_txs_success(get_asset_transfers_response):
 def test_get_transfer_txs_failed():
     responses.add(
         responses.POST,
-        f"https://eth-mainnet.g.alchemy.com/v2/{_API_KEY}",
+        f"https://eth-mainnet.g.alchemy.com/v2/some_key",
         json={},
         status=404,
     )
 
     with pytest.raises(TransactionLoadingError):
-        res = TransactionLoader(_API_KEY)._get_transfer_txs(1, 2)
+        res = TransactionLoader("some_key")._get_transfer_txs(1, 2)
 
 
 @responses.activate
 def test_get_gas_values(get_tx_receipts_response):
     responses.add(
         responses.POST,
-        f"https://eth-mainnet.g.alchemy.com/v2/{_API_KEY}",
+        f"https://eth-mainnet.g.alchemy.com/v2/some_key",
         json=get_tx_receipts_response,
         status=200,
     )
 
-    loader = TransactionLoader(_API_KEY)
+    loader = TransactionLoader("some_key")
     result = loader._get_gas_values(1, 3)
 
     assert result == {
@@ -205,7 +203,7 @@ def test_get_gas_values(get_tx_receipts_response):
 
 
 def test_load():
-    loader = TransactionLoader(_API_KEY)
+    loader = TransactionLoader()
 
     loader._get_transfer_txs = Mock(
         return_value={
@@ -265,7 +263,7 @@ def test_load():
 
 @pytest.mark.skip(reason="requires internet connection")
 def test_load_integration():
-    loader = TransactionLoader(_API_KEY)
+    loader = TransactionLoader()
     res = loader.load(start_block=18362260, end_block=18362263)  # query for 3 blocks
 
     assert isinstance(res, pd.DataFrame)
@@ -274,7 +272,7 @@ def test_load_integration():
 
 @pytest.mark.skip(reason="requires internet connection")
 def test_load_integration_time_interval():
-    loader = TransactionLoader(_API_KEY)
+    loader = TransactionLoader()
     res = loader.load(time_interval=30)  # query for blocks in last 30 secs
 
     assert isinstance(res, pd.DataFrame)
@@ -286,7 +284,7 @@ def test_load_integration_with_pagination():
     start_block = 18183000
     end_block = 18183050
     # runs in a minute
-    loader = TransactionLoader(_API_KEY)
+    loader = TransactionLoader()
     res = loader.load(start_block=start_block, end_block=end_block)
 
     # res.to_csv(f"{os.getcwd()}/transfer_tx_btw_{start_block}_{end_block}.csv")

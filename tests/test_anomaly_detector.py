@@ -1,11 +1,16 @@
 import os
+import shutil
 
 import pandas as pd
 import pandas.testing as pdt
 import pytest
 from sklearn.ensemble import IsolationForest
 
-from anomaly_detection.anomaly_detector import AnomalyDetector, ModelMetaData
+from anomaly_detection.anomaly_detector import (
+    AnomalyDetector,
+    ModelMetaData,
+    ModelLoadingError,
+)
 
 
 @pytest.fixture()
@@ -43,6 +48,13 @@ def processed_data():
     )
 
 
+@pytest.fixture
+def remove_models():
+    yield
+    models = AnomalyDetector()._models_directory
+    shutil.rmtree(models)
+
+
 def test_process_data(raw_data, processed_data):
     detector = AnomalyDetector()
     res = detector.process_data(raw_data)
@@ -50,17 +62,30 @@ def test_process_data(raw_data, processed_data):
     pdt.assert_frame_equal(processed_data, res, check_dtype=False)
 
 
-def test_fit(processed_data):
+@pytest.mark.usefixtures("remove_models")
+def test_fit_and_save_model(processed_data):
     detector = AnomalyDetector()
-    res = detector.fit(processed_data)
+    res = detector.fit_and_save_model(processed_data)
 
     assert isinstance(res, ModelMetaData)
     assert isinstance(res.estimator, IsolationForest)
     assert isinstance(res.model_path, str)
-    assert len(os.listdir(detector._models_directory)) > 1
 
 
+@pytest.mark.usefixtures("remove_models")
+def test_predict_from_pretrained_model_raises(processed_data):
+    detector = AnomalyDetector()
+
+    assert len(os.listdir(detector._models_directory)) == 0
+
+    with pytest.raises(ModelLoadingError):
+        res = AnomalyDetector().predict(data=processed_data, use_pre_trained_model=True)
+
+
+@pytest.mark.usefixtures("remove_models")
 def test_predict_from_pretrained_model(processed_data):
+    detector = AnomalyDetector()
+    _ = detector.fit_and_save_model(processed_data)
     res = AnomalyDetector().predict(data=processed_data, use_pre_trained_model=True)
 
     assert isinstance(res, pd.DataFrame)
@@ -68,25 +93,15 @@ def test_predict_from_pretrained_model(processed_data):
     assert "anomaly" in res.columns
 
 
+@pytest.mark.usefixtures("remove_models")
 def test_predict_from_model_metadata(processed_data):
     fitted_model = IsolationForest(random_state=42, contamination=0.001).fit(
         processed_data[["value", "gas_cost_in_eth"]]
     )
+    detector = AnomalyDetector()
     model_metadata = ModelMetaData(estimator=fitted_model, model_path="some_path")
-    res = AnomalyDetector().predict(data=processed_data, model_metadata=model_metadata)
+    res = detector.predict(data=processed_data, model_metadata=model_metadata)
 
     assert isinstance(res, pd.DataFrame)
     assert "anomaly_score" in res.columns
     assert "anomaly" in res.columns
-
-
-@pytest.mark.skip(reason="test to save a model")
-def test_fit_save_pre_trained_model():
-    from anomaly_detection.transaction_loader import TransactionLoader
-
-    loader = TransactionLoader("t-5jnnHotwe9R3vHAUPcfOY9eYNufREN")
-    data = loader.load(start_block=18183000, end_block=18183050)
-
-    detector = AnomalyDetector()
-    cleaned_data = detector.process_data(data)
-    detector.fit(cleaned_data)

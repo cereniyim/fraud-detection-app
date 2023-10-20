@@ -15,11 +15,10 @@ _BLOCK_PER_SECOND = 5 / 60
 
 
 class TransactionLoader:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str = "t-5jnnHotwe9R3vHAUPcfOY9eYNufREN"):
         self._uri = f"https://eth-mainnet.g.alchemy.com/v2/{api_key}"
         self._get_transfer_tx_method_name = "alchemy_getAssetTransfers"
         self._get_tx_receipts_method_name = "alchemy_getTransactionReceipts"
-        self._get_block_number_method_name = "eth_blockNumber"
         self._headers = {
             "accept": "application/json",
             "content-type": "application/json",
@@ -29,7 +28,7 @@ class TransactionLoader:
         self,
         start_block: Optional[int] = None,
         end_block: Optional[int] = None,
-        time_interval: Optional[int] = None,
+        time_interval: int = 0,
     ) -> pd.DataFrame:
         """
         Loads ERC20 and external Transfer transactions from Ethereum Mainnet either for the
@@ -54,7 +53,7 @@ class TransactionLoader:
         tx_hash     |   value   |   token   |   gas_used    |   gas_price
 
         """
-        if time_interval is not None and (start_block is None and end_block is None):
+        if time_interval > 0:
             # if time interval is given, we get the start and end block from it
             last_blocks = ceil(time_interval * _BLOCK_PER_SECOND)
             block_response = requests.post(
