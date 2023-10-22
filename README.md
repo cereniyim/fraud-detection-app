@@ -1,11 +1,12 @@
 # Anomaly Detection App
 Ethereum Mainnet Anomalous Transactions Detection App
 
-## App Summary
-This app detects anomalous transactions on Ethereum Mainnet for the given block range or
-time interval. Current scope is ERC20 external token transfers.
+## App Summary & Main Purpose
+This app detects anomalous transactions on Ethereum Mainnet for the given block range or time interval. Current scope 
+is ERC20 external token transfers.
 
-In this context, an anomaly can be defined as transactions that are highly likely to be fraud or exchanges a scam token.
+In this problem context, an anomaly (outlier) can be defined as transactions that exchanges a potentially untrusted token. 
+The app identifies such transactions so that users are prevented from interacting with untrusted tokens.
 
 ![app_flow](images/app_flow.png)
 
@@ -79,33 +80,40 @@ in the results.
 docker stop $(docker ps -a -q)
 ```
 
-## Interpretation of some of the predictions 
-To illustrate how ML model behind the app works, I used
-- 18183000-18183050 block range as training data 
+## Interpretation of the Predictions 
+To illustrate how anomaly-detection-app works, I used
+- 18183000-18183050 block range as training dataset
 - 18370728-18370788 block range as test dataset
 
-The distribution of features in the log scale is as follows
+The distribution of features in the log scale (as the both features are highly positively-skewed distributions) are as 
+follows. The red circle shows where most of the samples are centered.
 
 ![inference_features_distribution.png](images/inference_features_distribution.png)
 
-There are outliers in terms of high token value and gas cost.
+few outlier regions are visible:
+- low value txs (left hand side of the circle)
+- high gas_cost txs (above the circle)
+- high value txs (right hand side of the circle)
 
-The model detects extremely high token value transactions as anomalies, dark blue points are outliers.
+The model detects transactions that exchanges tokens in extremely high values as anomalies, represented as dark blue 
+points below.
 
 ![predictions.png](images/predictions.png)
 
-When we filter by the txs that are labeled as anomalies, we get txs with not-so-commonly used tokens like
+When we filter by the anomaly-labeled transactions, we get transactions with potentially untrusted tokens like
 - [POKEMON 2.0](https://etherscan.io/token/0x73d5b2f081cedf63a9e660a22088c7724af78774)
 - [KuKu](https://etherscan.io/token/0x27206f5a9afd0c51da95f20972885545d3b33647)
+- [Simpson6900](https://etherscan.io/token/0xAd6eEFb4f4a6Ce3E2cd2049C3104f5CE5ED082F0)
+- [PEPEMARS](https://etherscan.io/token/0xd4496c6600ec15c695bd2c65d60e09c8d4d1e30c)
 
-where there are only few holder of those tokens.
+where there are only a few holders of those tokens.
 
-Since our training data is indexed by unique transaction_hash and token pair, the model only detects certain leg of the 
-transaction as anomalous. For instance [this tx](https://etherscan.io/tx/0x51949a40deeb804fdc686e2504914c3f37063b1d5b628b5639fae57fa8a54c75) 
-consists of trusted tokens and the POKEMON 2.0 token: USDT -> WETH -> POKEMON 2.0
+Since our dataset is indexed by unique transaction_hash and token, the model only detects certain leg of the transaction 
+as anomalous. For instance, [this transaction](https://etherscan.io/tx/0x51949a40deeb804fdc686e2504914c3f37063b1d5b628b5639fae57fa8a54c75) consists of trusted tokens and the POKEMON 2.0 token: 
+USDT -> WETH -> POKEMON 2.0
 
-Our model only detects POKEMON 2.0 transfer as anomalous. However, it is safe to extrapolate to the entire transaction since 
-we want to protect users to exchange malicious tokens.
+Nevertheless, we can infer that if a transaction goes through an untrusted token we can flag it as anomaly. All in all, 
+the aim of the app is to identify transactions with untrusted tokens, so that users are prevented from exchanging them.
 
 ![img.png](images/anomalous_txs.png)
 
