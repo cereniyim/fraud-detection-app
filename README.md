@@ -5,11 +5,13 @@ Ethereum Mainnet Anomalous Transactions Detection App
 This app detects anomalous transactions on Ethereum Mainnet for the given block range or
 time interval. Current scope is ERC20 external token transfers.
 
+In this context, an anomaly can be defined as transactions that are highly likely to be fraud or exchanges a scam token.
+
 ![app_flow](images/app_flow.png)
 
 You can interact with an app through the Swagger (link provided below) or curl requests.
 
-## How To Use the App
+## How To Install and Use the App
 **Pre-requisites**: Docker engine running locally. You can find the instructions [here](https://docs.docker.com/engine/install/)
 to install Docker on your local machine.
 
@@ -31,34 +33,52 @@ curl -X 'POST' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
-  "start_block": <start_block>,
-  "end_block": <end_block>,
+  "start_block": 0,
+  "end_block": 0,
   "time_interval_in_seconds":0,
   "use_pre_trained_model": false 
 }'
 ```
-App accepts 4 parameters:
+The app accepts 4 parameters:
 - start_block
 - end_block
-- time_interval_in_seconds: defaults to 0
-- use_pre_trained_model: defaults to False
+- time_interval_in_seconds: defaults to `0`
+- use_pre_trained_model: defaults to `false`
 
-To query with the time interval, set `time_interval_in_seconds` to an integer greater than 0. This will override using 
-the app with the block range.
+To get the data with the block range set `start_block` and `end_block`. `start_block` must be smaller than or equal to 
+`end_block` and boundaries are inclusive.
 
-To use a pre-trained model, set `use_pre_trained_model` to `true`.
+To get the data with the time interval, set `time_interval_in_seconds` to an integer greater than 0. This will override 
+using the app with the block range. This will get the latest blocks within the specified time interval approximately.
 
-App first gets the data from onchain and then detects anomalous transactions with 2 features
+To use a pre-trained model, set `use_pre_trained_model` to `true`. This will load the latest model from the model registry.
+Model training is required upon start.
+
+After loading the data, the model is trained with 2 features
 - transaction value per token
-- gas cost (gas_price * gas_used_by_transaction)
+- gas cost (aby multiplying the effective gas price and gas used by transaction)
 
-App requires model training upon start.
+The app returns a list of dictionaries as an output, an example output is as follows
+```json
+[
+  {
+    "transaction_hash": "0x3c73140e51879e17902c7eb3845a8990ea63df0637e3cea4c5a6453508eadfda",
+    "value": "2,103,429,269,563,549.75",
+    "token": "BUGATTI",
+    "gas_cost": "0.00087476",
+    "anomaly_score": "0.8432",
+    "etherscan_link": "https://etherscan.io/tx/0x3c73140e51879e17902c7eb3845a8990ea63df0637e3cea4c5a6453508eadfda"
+  }
+]
+```
+Each dictionary item in the output is unique per `transaction_hash` and `token`, so you might get duplicate transactions 
+in the results.
 
 To stop the app, run
-
 ```shell script
 docker stop $(docker ps -a -q)
 ```
+
 ## Interpretation of some of the predictions 
 To illustrate how ML model behind the app works, I used
 - 18183000-18183050 block range as training data 
