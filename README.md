@@ -12,7 +12,7 @@ The app identifies such transactions so that users are prevented from interactin
 
 You can interact with an app through the Swagger (link provided below) or curl requests.
 
-## How To Install and Use the App
+## How To Install and Use
 **Pre-requisites**: Docker engine running locally. You can find the instructions [here](https://docs.docker.com/engine/install/)
 to install Docker on your local machine.
 
@@ -50,7 +50,7 @@ To get the data with the block range set `start_block` and `end_block`. `start_b
 `end_block` and boundaries are inclusive.
 
 To get the data with the time interval, set `time_interval_in_seconds` to an integer greater than 0. This will override 
-using the app with the block range. This will get the latest blocks within the specified seconds approximately.
+using the app with the block range and get the latest blocks within the specified seconds approximately.
 
 To use a pre-trained model, set `use_pre_trained_model` to `true`. This will load the latest model from the model registry.
 Model training is required upon start.
@@ -75,22 +75,22 @@ The app returns a list of dictionaries as an output, an example is as follows
 Each dictionary item in the output is unique per `transaction_hash` and `token`, so you might get duplicate transactions 
 in the results.
 
-**To stop the app** run
+**To stop the app**
 ```shell script
 docker stop $(docker ps -a -q)
 ```
 
 ## Interpretation of the Predictions 
-To illustrate how anomaly-detection-app works, I used
+To illustrate how anomaly detection app works, I used
 - 18183000-18183050 block range as training dataset
 - 18370728-18370788 block range as test dataset
 
-The distribution of features in the log scale (as the both features are highly positively-skewed distributions) are as 
-follows. The red circle shows where most of the samples are centered.
+The distribution of features from the test dataset in the log scale (as the both features are highly positively-skewed
+distributions) are as follows. The red circle shows where most of the data are centered.
 
 ![inference_features_distribution.png](images/inference_features_distribution.png)
 
-few outlier regions are visible:
+Some outlier regions are visible:
 - low value txs (left hand side of the circle)
 - high gas_cost txs (above the circle)
 - high value txs (right hand side of the circle)
@@ -108,14 +108,14 @@ When we filter by the anomaly-labeled transactions, we get transactions with pot
 
 where there are only a few holders of those tokens.
 
-Since our dataset is indexed by unique transaction_hash and token, the model only detects certain leg of the transaction 
-as anomalous. For instance, [this transaction](https://etherscan.io/tx/0x51949a40deeb804fdc686e2504914c3f37063b1d5b628b5639fae57fa8a54c75) consists of trusted tokens and the POKEMON 2.0 token: 
-USDT -> WETH -> POKEMON 2.0
+Since our dataset is indexed by unique transaction_hash and token, the model only detects a certain leg of the transaction 
+as anomalous, even though trusted tokens are part of the transaction. For instance, [this transaction](https://etherscan.io/tx/0x51949a40deeb804fdc686e2504914c3f37063b1d5b628b5639fae57fa8a54c75) 
+consists of trusted tokens and the POKEMON 2.0 token: USDT -> WETH -> POKEMON 2.0
 
 Nevertheless, we can infer that if a transaction goes through an untrusted token we can flag it as anomaly. All in all, 
 the aim of the app is to identify transactions with untrusted tokens, so that users are prevented from exchanging them.
 
-![img.png](images/anomalous_txs.png)
+![anomalous_txs.png](images/anomalous_txs.png)
 
 ## My Approach on Solving the Challenge and Key Architectural Decisions
 While working on the challenge I kept my focus on having a reasonably working anomaly detection MVP product with a readable 
