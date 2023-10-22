@@ -1,4 +1,4 @@
-# anomaly-detection-app
+# Anomaly Detection App
 Ethereum Mainnet Anomalous Transactions Detection App
 
 ## App Summary
@@ -89,14 +89,16 @@ we want to protect users to exchange malicious tokens.
 
 ![img.png](images/anomalous_txs.png)
 
-## Key Architectural Decisions
+## My Approach on Solving the Challenge and Key Architectural Decisions
+While working on the challenge I kept my focus on having a reasonably working anomaly detection MVP product with a readable 
+and high-quality code, within the more or less specified time-box.
+
 Querying for every transaction on Ethereum Mainnet seemed suboptimal since they also include token mints, burns or 
 internal contract transactions and so on.
 
 So, I narrowed down the problem scope to use ERC20 token transfers only.
 
 Moreover, since "better than a random" model is emphasized in the requirements, I only included 2 features:
-
 
 ### Alchemy as the source data provider
 I first explored several data source providers (Alchemy and Etherscan). 
@@ -152,12 +154,13 @@ datasets as well.
 
 From implementation perspective
 - store API key in a secret manager and retrieve key from there
-- pre-process data in a separate class so that AnomalyDetector have single responsibility around models
+- pre-process data in a separate class so that AnomalyDetector have single responsibility around model training and inference
 - implement more detailed error handling for loading transactions and data validation (e.g. checking for the logical 
 ordering of start_block and end_block parameters)
-- aggregate return value from the endpoint per transaction hash so that it is more informative
+- aggregate return value from the app per transaction hash so that it is more clean and informative
 
-## Setup Local Environment & Run Unit Tests
+## For developers
+### Setup Local Environment & Run Unit Tests
 Change directory to your local repository
 ```shell script
 cd <path-to-your-local-repository>
@@ -188,7 +191,7 @@ Run unit tests
 py.test tests
 ```
 
-## Run Notebook
+### Update Environment to Run  the Notebook
 To run notebooks update environment with the following commands
 ```
 pip install jupyter
@@ -196,9 +199,4 @@ pip install plotly
 pip install seaborn
 pip intall pydotplus
 conda install python-graphviz
-```
-
-**To delete local deployment**
-```shell script
-docker stop $(docker ps -a -q)
 ```
