@@ -49,16 +49,16 @@ To get the data with the block range set `start_block` and `end_block`. `start_b
 `end_block` and boundaries are inclusive.
 
 To get the data with the time interval, set `time_interval_in_seconds` to an integer greater than 0. This will override 
-using the app with the block range. This will get the latest blocks within the specified time interval approximately.
+using the app with the block range. This will get the latest blocks within the specified seconds approximately.
 
 To use a pre-trained model, set `use_pre_trained_model` to `true`. This will load the latest model from the model registry.
 Model training is required upon start.
 
-After loading the data, the model is trained with 2 features
+After loading the data, the model is trained with 2 features:
 - transaction value per token
-- gas cost (aby multiplying the effective gas price and gas used by transaction)
+- gas cost (by multiplying the effective gas price and gas used by transaction)
 
-The app returns a list of dictionaries as an output, an example output is as follows
+The app returns a list of dictionaries as an output, an example is as follows
 ```json
 [
   {
@@ -74,7 +74,7 @@ The app returns a list of dictionaries as an output, an example output is as fol
 Each dictionary item in the output is unique per `transaction_hash` and `token`, so you might get duplicate transactions 
 in the results.
 
-To stop the app, run
+**To stop the app** run
 ```shell script
 docker stop $(docker ps -a -q)
 ```
