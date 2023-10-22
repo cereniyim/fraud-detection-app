@@ -25,7 +25,7 @@ docker build -t anomaly-detection-app:0.0.1 .
 ```shell script
 docker run -d -p 8000:8000 anomaly-detection-app:0.0.1
 ```
-You can access the app and its documentation on http://0.0.0.0:8000/docs or interact with it from CLI.
+You can access the app and its documentation on Swagger http://0.0.0.0:8000/docs or interact with it from CLI.
 
 **Interact from CLI**
 ```shell script
@@ -57,7 +57,7 @@ Model training is required upon start.
 
 After loading the data, the model is trained with 2 features:
 - transaction value per token
-- gas cost (by multiplying the effective gas price and gas used by transaction)
+- gas cost
 
 The app returns a list of dictionaries as an output, an example is as follows
 ```json
@@ -122,56 +122,71 @@ While working on the challenge I kept my focus on having a reasonably working an
 and high-quality code, within the more or less specified time-box.
 
 Querying for every transaction on Ethereum Mainnet seemed suboptimal since they also include token mints, burns or 
-internal contract transactions and so on.
+internal contract calls and so on. So, I started by narrowing down the problem scope to use ERC20 token transfers only.
 
-So, I narrowed down the problem scope to use ERC20 token transfers only.
-
-Moreover, since "better than a random" model is emphasized in the requirements, I only included 2 features:
+Moreover, since "better than a random" model is emphasized in the requirements, I only included 2 features: the value of 
+the transaction per token and gas cost. Gas cost is calculated by multiplying the effective gas price and gas used by 
+transaction.
 
 ### Alchemy as the source data provider
-I first explored several data source providers (Alchemy and Etherscan). 
-I chose Alchemy API because it offers endpoints for efficient querying and filtering of Ethereum transactions. 
+I  explored several data source providers Alchemy and Etherscan to get token transfer transactions. I chose Alchemy API 
+because it offers endpoints for efficient querying and filtering of Ethereum transactions. 
 
-I used [getAssetTransfers](https://docs.alchemy.com/reference/alchemy-getassettransfers) endpoint to get ERC20 token 
-transfers. I also excluded internal transactions so that I only get transactions initiated by the users.
+I used [getAssetTransfers](https://docs.alchemy.com/reference/alchemy-getassettransfers) endpoint to get ERC20 token transfers. I also excluded internal transactions so that I 
+only get transactions initiated by the users.
 
-To get each gas spent for the transactions I used [getTransactionReceipts](https://docs.alchemy.com/reference/alchemy-gettransactionreceipts) endpoint.
-- transaction value per token
-- gas cost in ETH
+To get each gas spent for the transactions I used [getTransactionReceipts](https://docs.alchemy.com/reference/alchemy-gettransactionreceipts) endpoint. From that endpoint I used 
+`gasUsed` and `effectiveGasPrice` to calculate gas cost. After loading the transactions, I extracted the `gas_cost` 
+feature by multiplying the two.
 
-### `IsolationForest` as the underlying algorithm
-I researched on the anomaly detection problem first and most common statistical approaches used. Given the above features, I decided 
-to approach this problem as an unsupervised machine learning problem.  
-I chose Isolation Forest because of its decision tree-based, non-parametric and easy-to-understand nature.
+### Isolation Forest as the underlying algorithm
+I researched on the anomaly detection problem first and most common statistical approaches used. Given the above features, 
+I decided to approach this problem as an unsupervised machine learning problem. I chose Isolation Forest because of its 
+decision tree-based, non-parametric and easy-to-understand nature.
 
-I used [this blog post](https://towardsdatascience.com/isolation-forest-the-anomaly-detection-algorithm-any-data-scientist-should-know-1a99622eec2d) and [the original paper](https://www.researchgate.net/publication/224384174_Isolation_Forest) to understand how algorith works.
+I used [this blog post](https://towardsdatascience.com/isolation-forest-the-anomaly-detection-algorithm-any-data-scientist-should-know-1a99622eec2d) and read [the original paper](https://www.researchgate.net/publication/224384174_Isolation_Forest) to understand how algorithm works.
 
-The algorithm focuses on detecting and isolating anomalous samples in a decision tree as early as possible. As early as 
-possible here suggests that when fed into a decision tree an anomalous data point will be closer to the root node compared 
-to common samples. By default, it constructs 100 decision trees and takes 256 samples to feed into each tree.
+The algorithm focuses on detecting and isolating anomalous samples in a decision tree as early as possible. The algorithm
+starts by randomly selecting a feature from the dataset. It then chooses a random value within the range of that feature. 
+This value serves as a threshold. 
 
-After constructing the trees, it measures the distance between the leaf node and the root node for each sample, then
-takes the average of the distance measures per sample. Lesser the average distance the more likely that a sample is 
-anomalous (or outlier).
+Then, the algorithm uses this threshold to split your data. Data points on one side of the threshold are grouped together, 
+and data points on the other side are grouped separately.
 
-I used the default parameters, only set the `contamination` parameter to 0.001 by intuition. This parameter controls
-how much of anomalies are expected for the domain problem.
+The above steps are repeated until the tree depth is reached (default is 8). This process is repeated for each tree in 
+the algorithm. In the end, you have a collection of trees, where more common samples are grouped with other 
+normal samples in the deeper nodes and anomalous samples isolated in the shallower nodes. Here is a random single tree 
+visualization from the anomaly detection app, notice that there are 2 obvious anomaly samples (the top white and orange 
+leaf nodes):
 
-TODO insert here a tree image
+![img.png](images/single_tree.png)
 
-### Local Filesystem as a Model Reistry
-Requirements mentioned using the latest pre-trained model, that requires app saving the model either in memory or some 
-storage solution.
+In the end, if a sample is isolated by many trees in the forest very quickly, it's considered as an anomaly. Conversely, if 
+it takes many iterations to isolate a data point, it's more likely to be a normal, non-anomalous sample.
 
-Considering the time-box specification of the assignment, I chose local filesystem to show how a model registry could be 
-integrated into this app. 
+The algorithm assigns anomaly scores to all data points. It is a normalized score between 0 and 1. It measures
+how quickly a sample gets isolated among all trees. If it's isolated very quickly, it's given a high score, 
+suggesting it's an anomaly. If it takes a long time to get isolated, it's considered normal. The closer the score is to 1, 
+the more likely it's an anomaly, and the closer it is to 0, the more normal it is.
 
-### Making a POST Endpoint and Containerization with Docker
-I wrapped the core data fetching and model training & inference process in an API endpoint. Moreover, I used fastAPI as 
-the framework because of its nice documentation and data validation capabilities.
- 
-I used Docker to create the required environment and the app. This enables users to install the app on any machine as a 
-further improvement area.
+Also, you can set a threshold to decide what level of anomaly you want to detect, with `contamination` parameter. Samples 
+with scores above certain threshold are considered anomalies, while those below the threshold are considered normal. I set 
+it 0.001 by intuition. In simple terms, this parameter controls how much of anomalies are expected for the domain problem.
+
+### Local filesystem as a model registry
+Requirements mentioned that users can predict using the latest pre-trained model, so I used the local filesystem as the 
+model registry. Each trained model is indexed by timestamp and saved in the app by `AnomalyDetector.fit_and_save_model`.
+
+Considering the time-box specification of the assignment, I chose the local filesystem to show how a model registry 
+could be integrated into the app to satisfy this requirement. 
+
+### Making a POST endpoint and containerization with Docker
+I wrapped the core data loading and model training & inference process in an API endpoint. Moreover, I used fast API as 
+the framework because of its nice documentation and default data validation capabilities.
+
+I preferred an API endpoint over making a Python package with a simple CLI because of Open API specification which 
+provide self-explanatory documentation. I used Docker to create the required environment and to run the app so that it 
+is installable on any local or virtual machine.
 
 ## Further System Improvements
 From system design perspective, a real-world implementation of this problem would use a database and model registry to 
