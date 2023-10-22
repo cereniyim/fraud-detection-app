@@ -189,18 +189,27 @@ provide self-explanatory documentation. I used Docker to create the required env
 is installable on any local or virtual machine.
 
 ## Further System Improvements
-From system design perspective, a real-world implementation of this problem would use a database and model registry to 
-track latest trained models. Mlflow can be one option for that. 
+From system design perspective, a real-world implementation of this problem would use a database and model registry. 
+Model registry can be used to track training runs, error metrics and training artifacts. Mlflow is one tool that provides 
+those capabilities. A database would store the datasets, features and transactions & tokens detected as anomalies.
 
-Also, this database could serve as storage for training
-datasets as well.
-
-From implementation perspective
-- store API key in a secret manager and retrieve key from there
-- pre-process data in a separate class so that AnomalyDetector have single responsibility around model training and inference
-- implement more detailed error handling for loading transactions and data validation (e.g. checking for the logical 
-ordering of start_block and end_block parameters)
-- aggregate return value from the app per transaction hash so that it is more clean and informative
+From the implementation perspective
+- don't expose API key store it in a secret manager and retrieve the key from there
+- pre-process data in a separate class so that `AnomalyDetector` have single responsibility around the model training and inference
+- implement more detailed data validation and error handling logic (e.g. checking for the logical ordering of 
+start_block and end_block parameters and raise 400 Bad request if it is not logically ordered)
+- aggregate app return results by transaction_hash so that it is not repeated This can be achieved by refactoring 
+`AnomalyDetectionOutput` to store token symbol mapping to transaction value per token. This way users can also display 
+the entire transaction route.
+```python
+class AnomalyDetectionOutput(BaseModel):
+    transaction_hash: str
+    token2value: dict[str, float] #contains all tokens and values that transaction goes through
+    gas_cost: str
+    anomaly_score: str
+    etherscan_link: str
+```
+- add unit testing for the POST endpoint, it is only tested with the integration testing approach
 
 ## For developers
 ### Setup Local Environment & Run Unit Tests
