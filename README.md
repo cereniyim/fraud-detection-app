@@ -90,12 +90,12 @@ distributions) are as follows. The red circle shows where most of the data are c
 
 ![inference_features_distribution.png](images/inference_features_distribution.png)
 
-Some outlier regions are visible:
+Some outlier samples/regions are visible:
 - low value txs (left hand side of the circle)
 - high gas_cost txs (above the circle)
 - high value txs (right hand side of the circle)
 
-The model detects transactions that exchanges tokens in extremely high values as anomalies, represented as dark blue 
+The app detects transactions that exchanges tokens in extremely high values as anomalies, represented as dark blue 
 points below.
 
 ![predictions.png](images/predictions.png)
@@ -121,15 +121,15 @@ the aim of the app is to identify transactions with untrusted tokens, so that us
 While working on the challenge I kept my focus on having a reasonably working anomaly detection MVP product with a readable 
 and high-quality code, within the more or less specified time-box.
 
-Querying for every transaction on Ethereum Mainnet seemed suboptimal since they also include token mints, burns or 
-internal contract calls and so on. So, I started by narrowing down the problem scope to use ERC20 token transfers only.
+Querying for every transaction on Ethereum Mainnet seemed suboptimal since a transaction can also be a mint, burn or 
+contract creation and so on. So, I started by narrowing down the problem scope to use ERC20 token transfers only.
 
 Moreover, since "better than a random" model is emphasized in the requirements, I only included 2 features: the value of 
 the transaction per token and gas cost. Gas cost is calculated by multiplying the effective gas price and gas used by 
 transaction.
 
 ### Alchemy as the source data provider
-I  explored several data source providers Alchemy and Etherscan to get token transfer transactions. I chose Alchemy API 
+I  explored several data source providers (Alchemy and Etherscan) to get token transfer transactions. I chose Alchemy API 
 because it offers endpoints for efficient querying and filtering of Ethereum transactions. 
 
 I used [getAssetTransfers](https://docs.alchemy.com/reference/alchemy-getassettransfers) endpoint to get ERC20 token transfers. I also excluded internal transactions so that I 
