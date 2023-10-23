@@ -212,8 +212,21 @@ class AnomalyDetectionOutput(BaseModel):
 ```
 - add unit testing for the POST endpoint, it is only tested with the integration testing approach
 
-## For developers
-### Setup Local Environment & Run Unit Tests
+## For Developers
+### Project organization
+    ├── README.md                         <- The top-level README explainin the project
+    ├── anomaly_detection                 <- Anomaly detection core implementation
+    │   ├── anomaly_detector.py           <- Feature engineering and model training and inference class
+    │   ├── transaction_loader.py         <- Transaction loading class
+    ├── app                               <- fastAPI app
+    │   ├── data_models.py                <- Input & output model classes required for the endpoint
+    │   ├── main.py                       <- Endpoint implementation
+    ├── images                            <- Images used in the README
+    ├── Dockerfile                        <- Dockerfile to create anomaly-detection-app image
+    ├── notebooks                         <- Model exploration notebooks
+    ├── tests                             <- Unit tests
+
+### Setup local environment & run unit tests
 Change directory to your local repository
 ```shell script
 cd <path-to-your-local-repository>
@@ -244,7 +257,7 @@ Run unit tests
 py.test tests
 ```
 
-### Update Environment to Run  the Notebook
+### Update environment to run  the notebook
 To run notebooks update environment with the following commands
 ```
 pip install jupyter
