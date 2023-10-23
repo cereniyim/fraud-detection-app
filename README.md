@@ -197,6 +197,12 @@ Model registry can be used to track training runs, error metrics and training ar
 those capabilities. A database would store the training and inference datasets, features and transactions & tokens 
 detected as anomalies.
 
+From model training perspective, gas_cost feature doesn't seem to have much effect in determining anomalous transactions.
+There is room for improvement for the feature engineering part, for example total supply of the traded token can be added as
+a feature. The source of this intuition is [here](https://ethereum.org/en/guides/how-to-id-scam-tokens/). Moreover, the 
+`contamination` parameter can be adjusted so that the model identifies more anomalous transactions. However, that might bring 
+the potential to increase false positives.
+
 From the implementation perspective following can be improved:
 - don't expose API key store it in a secret manager and retrieve the key from there
 - pre-process data in a separate class so that `AnomalyDetector` have single responsibility around the model training and inference
