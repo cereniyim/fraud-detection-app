@@ -86,7 +86,7 @@ To illustrate how anomaly detection app works, I used
 - 18370728-18370788 block range as test dataset
 
 The distribution of features from the test dataset in the log scale (as the both features are highly positively-skewed
-distributions) are as follows. The red circle shows where most of the data are centered.
+distributions) are as follows. The red circle shows where most of the data are centered. Axes show the original range.
 
 ![inference_features_distribution.png](images/inference_features_distribution.png)
 
@@ -95,8 +95,8 @@ Some outlier samples/regions are visible:
 - high gas_cost txs (above the circle)
 - high value txs (right hand side of the circle)
 
-The app detects transactions that exchanges tokens in extremely high values as anomalies, represented as dark blue 
-points below.
+After model training and running the predictions, the app detects transactions that exchanges tokens in extremely high 
+values as anomalies, represented as dark blue points below.
 
 ![predictions.png](images/predictions.png)
 
@@ -125,8 +125,7 @@ Querying for every transaction on Ethereum Mainnet seemed suboptimal since a tra
 contract creation and so on. So, I started by narrowing down the problem scope to use ERC20 token transfers only.
 
 Moreover, since "better than a random" model is emphasized in the requirements, I only included 2 features: the value of 
-the transaction per token and gas cost. Gas cost is calculated by multiplying the effective gas price and gas used by 
-transaction.
+the transaction per token and gas cost.
 
 ### Alchemy as the source data provider
 I  explored several data source providers (Alchemy and Etherscan) to get token transfer transactions. I chose Alchemy API 
@@ -135,11 +134,11 @@ because it offers endpoints for efficient querying and filtering of Ethereum tra
 I used [getAssetTransfers](https://docs.alchemy.com/reference/alchemy-getassettransfers) endpoint to get ERC20 token transfers. I also excluded internal transactions so that I 
 only get transactions initiated by the users.
 
-To get each gas spent for the transactions I used [getTransactionReceipts](https://docs.alchemy.com/reference/alchemy-gettransactionreceipts) endpoint. From that endpoint I used 
+To get each gas spent for the transactions I used [getTransactionReceipts](https://docs.alchemy.com/reference/alchemy-gettransactionreceipts) endpoint. From that endpoint, I used 
 `gasUsed` and `effectiveGasPrice` to calculate gas cost. After loading the transactions, I extracted the `gas_cost` 
 feature by multiplying the two.
 
-### Isolation Forest as the underlying algorithm
+### Isolation forest as the underlying algorithm
 I researched on the anomaly detection problem first and most common statistical approaches used. Given the above features, 
 I decided to approach this problem as an unsupervised machine learning problem. I chose Isolation Forest because of its 
 decision tree-based, non-parametric and easy-to-understand nature.
@@ -150,8 +149,8 @@ The algorithm focuses on detecting and isolating anomalous samples in a decision
 starts by randomly selecting a feature from the dataset. It then chooses a random value within the range of that feature. 
 This value serves as a threshold. 
 
-Then, the algorithm uses this threshold to split your data. Data points on one side of the threshold are grouped together, 
-and data points on the other side are grouped separately.
+Then, the algorithm uses this threshold to split samples. Samples on one side of the threshold are grouped together, 
+and samples on the other side are grouped separately.
 
 The above steps are repeated until the tree depth is reached (default is 8). This process is repeated for each tree in 
 the algorithm. In the end, you have a collection of trees, where more common samples are grouped with other 
@@ -162,16 +161,17 @@ leaf nodes):
 ![img.png](images/single_tree.png)
 
 In the end, if a sample is isolated by many trees in the forest very quickly, it's considered as an anomaly. Conversely, if 
-it takes many iterations to isolate a data point, it's more likely to be a normal, non-anomalous sample.
+it takes many iterations to isolate a sample, it's more likely to be a normal, non-anomalous sample.
 
-The algorithm assigns anomaly scores to all data points. It is a normalized score between 0 and 1. It measures
+The algorithm assigns anomaly scores to all samples in the dataset. It is a normalized score between 0 and 1. It measures
 how quickly a sample gets isolated among all trees. If it's isolated very quickly, it's given a high score, 
 suggesting it's an anomaly. If it takes a long time to get isolated, it's considered normal. The closer the score is to 1, 
 the more likely it's an anomaly, and the closer it is to 0, the more normal it is.
 
-Also, you can set a threshold to decide what level of anomaly you want to detect, with `contamination` parameter. Samples 
-with scores above certain threshold are considered anomalies, while those below the threshold are considered normal. I set 
-it 0.001 by intuition. In simple terms, this parameter controls how much of anomalies are expected for the domain problem.
+Also, you can set a threshold to decide what level of anomaly you want to detect. Samples with scores above certain 
+threshold are considered anomalies, while those below the threshold are considered normal. This threshold parameter is 
+controlled by `contamination` parameter. I set it to 0.001 by intuition. In simple terms, this parameter controls how much 
+of anomalies are expected for the domain problem.
 
 ### Local filesystem as a model registry
 Requirements mentioned that users can predict using the latest pre-trained model, so I used the local filesystem as the 
@@ -181,19 +181,20 @@ Considering the time-box specification of the assignment, I chose the local file
 could be integrated into the app to satisfy this requirement. 
 
 ### Making a POST endpoint and containerization with Docker
-I wrapped the core data loading and model training & inference process in an API endpoint. Moreover, I used fast API as 
+I wrapped the core data loading and model training & inference process in an API endpoint. Moreover, I used fastAPI as 
 the framework because of its nice documentation and default data validation capabilities.
 
-I preferred an API endpoint over making a Python package with a simple CLI because of Open API specification which 
+I preferred an API endpoint over making a Python package with a simple CLI because of OpenAPI specification which 
 provide self-explanatory documentation. I used Docker to create the required environment and to run the app so that it 
 is installable on any local or virtual machine.
 
 ## Further System Improvements
 From system design perspective, a real-world implementation of this problem would use a database and model registry. 
 Model registry can be used to track training runs, error metrics and training artifacts. Mlflow is one tool that provides 
-those capabilities. A database would store the datasets, features and transactions & tokens detected as anomalies.
+those capabilities. A database would store the training and inference datasets, features and transactions & tokens 
+detected as anomalies.
 
-From the implementation perspective
+From the implementation perspective following can be improved:
 - don't expose API key store it in a secret manager and retrieve the key from there
 - pre-process data in a separate class so that `AnomalyDetector` have single responsibility around the model training and inference
 - implement more detailed data validation and error handling logic (e.g. checking for the logical ordering of 
@@ -204,7 +205,7 @@ the entire transaction route.
 ```python
 class AnomalyDetectionOutput(BaseModel):
     transaction_hash: str
-    token2value: dict[str, float] #contains all tokens and values that transaction goes through
+    token2value: dict[str, float] # contains all tokens and values that transaction goes through
     gas_cost: str
     anomaly_score: str
     etherscan_link: str
