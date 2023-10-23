@@ -106,7 +106,10 @@ When we filter by the anomaly-labeled transactions, we get transactions with pot
 - [Simpson6900](https://etherscan.io/token/0xAd6eEFb4f4a6Ce3E2cd2049C3104f5CE5ED082F0)
 - [PEPEMARS](https://etherscan.io/token/0xd4496c6600ec15c695bd2c65d60e09c8d4d1e30c)
 
-where there are only a few holders of those tokens.
+where there are only a few holders of those tokens and they usually worth nothing. 
+
+Etherscan also labels tokens as trusted or untrusted in a more granular level ([here](https://info.etherscan.com/etherscan-token-reputation/)), 
+this model is able to identify tokens with "UNKNOWN" reputation.
 
 Since our dataset is indexed by unique transaction_hash and token, the model only detects a certain leg of the transaction 
 as anomalous, even though trusted tokens are part of the transaction. For instance, [this transaction](https://etherscan.io/tx/0x51949a40deeb804fdc686e2504914c3f37063b1d5b628b5639fae57fa8a54c75) 
