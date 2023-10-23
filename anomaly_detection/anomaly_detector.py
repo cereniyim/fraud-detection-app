@@ -78,7 +78,8 @@ class AnomalyDetector:
 
         Raises
         -------
-        ModelLoadingError: If no models are available in the model registry
+        ModelLoadingError
+            If no models are available in the model registry
 
         Returns
         -------

@@ -33,7 +33,7 @@ class TransactionLoader:
         """
         Loads ERC20 and external Transfer transactions from Ethereum Mainnet either for the
             - given block range
-            - latest blocks within the specified time interval
+            - latest blocks within the specified time interval ~ approximately
 
         Parameters
         ----------
@@ -43,6 +43,11 @@ class TransactionLoader:
             upper bound block number (inclusive)
         time_interval: Optional[int]
             time interval in seconds
+
+        Raises
+        -------
+        TransactionLoadingError
+            If any of the requests to Alchemy fails
 
         Returns
         -------
@@ -68,6 +73,8 @@ class TransactionLoader:
             self._handle_response_errors(block_response)
             latest_block_number = int(block_response.json()["result"], base=16)
             end_block = latest_block_number - 1
+            # alchemy_getTransactionReceipts endpoint fails time to time for the latest block
+            # to prevent that we fallback to latest_block -1
             start_block = end_block - last_blocks + 1
         transfer_txs = self._get_transfer_txs(start_block, end_block)
         tx_gas = self._get_gas_values(start_block, end_block)
