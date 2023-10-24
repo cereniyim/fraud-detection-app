@@ -64,8 +64,9 @@ class AnomalyDetector:
         use_pre_trained_model: bool = False,
     ) -> pd.DataFrame:
         """
-        Generate predictions for detecting anomalous transactions using input data. If `use_pre_trained_model` is True,
-        then the latest model is loaded from the registry and used. Otherwise, `ModelMetaData.fitted_estimator` is used.
+        Generate predictions to detect anomalous transactions using input data and an estimator. If `use_pre_trained_model`
+        is True, then the latest model is loaded from the registry and used. Otherwise, `ModelMetaData.fitted_estimator`
+        is used.
 
         Parameters
         ----------
