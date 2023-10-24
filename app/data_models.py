@@ -23,6 +23,6 @@ class AnomalyDetectionOutput(BaseModel):
     transaction_hash: str
     value: str
     token: str
-    gas_cost: str
+    gas_cost: str  # in ETH
     anomaly_score: str
     etherscan_link: str

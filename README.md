@@ -12,7 +12,7 @@ The app identifies such transactions so that users are prevented from interactin
 
 You can interact with an app through the Swagger (link provided below) or curl requests.
 
-## How To Install and Use
+## How to Install and Use
 **Pre-requisites**: Docker engine running locally. You can find the instructions [here](https://docs.docker.com/engine/install/)
 to install Docker on your local machine.
 
@@ -57,7 +57,7 @@ Model training is required upon start.
 
 After loading the data, the model is trained with 2 features:
 - transaction value per token
-- gas cost
+- gas cost in ETH
 
 The app returns a list of dictionaries as an output, an example is as follows
 ```json
@@ -86,11 +86,11 @@ To illustrate how anomaly detection app works, I used
 - 18370728-18370788 block range as test dataset
 
 The distribution of features from the test dataset in the log scale (as the both features are highly positively-skewed
-distributions) are as follows. The red circle shows where most of the data are centered. Axes show the original range.
+distributions) are as follows. The red circle shows where most of the data are centered. Axes show the original data range.
 
 ![inference_features_distribution.png](images/inference_features_distribution.png)
 
-Some outlier samples/regions are visible:
+Some outlier samples and regions are visible:
 - low value txs (left hand side of the circle)
 - high gas_cost txs (above the circle)
 - high value txs (right hand side of the circle)
@@ -128,7 +128,7 @@ Querying for every transaction on Ethereum Mainnet seemed suboptimal since a tra
 contract creation and so on. So, I started by narrowing down the problem scope to use ERC20 token transfers only.
 
 Moreover, since "better than a random" model is emphasized in the requirements, I only included 2 features: the value of 
-the transaction per token and gas cost.
+the transaction per token and gas cost in ETH.
 
 ### Alchemy as the source data provider
 I  explored several data source providers (Alchemy and Etherscan) to get token transfer transactions. I chose Alchemy API 
@@ -138,8 +138,8 @@ I used [getAssetTransfers](https://docs.alchemy.com/reference/alchemy-getassettr
 only get transactions initiated by the users.
 
 To get each gas spent for the transactions, I used [getTransactionReceipts](https://docs.alchemy.com/reference/alchemy-gettransactionreceipts) endpoint. From that endpoint, I used 
-`gasUsed` and `effectiveGasPrice` to calculate gas cost. After loading the transactions, I extracted the `gas_cost` 
-feature by multiplying the two.
+`gasUsed` and `effectiveGasPrice` to calculate gas cost. After loading the transactions, I extracted the `gas_cost_in_eth` 
+feature by multiplying the two and then converted it from wei to ETH.
 
 ### Isolation forest as the underlying algorithm
 I researched on the anomaly detection problem first and most common statistical approaches used. Given the above features, 
@@ -185,7 +185,7 @@ Considering the time-box specification of the assignment, I chose the local file
 could be integrated into the app to satisfy this requirement. 
 
 ### Making a POST endpoint and containerization with Docker
-I wrapped the core data loading and model training & inference process in an API endpoint. Moreover, I used fastAPI as 
+I wrapped the core data loading and model training & predictions process in an API endpoint. Moreover, I used fastAPI as 
 the framework because of its nice documentation and default data validation capabilities.
 
 I preferred an API endpoint over making a Python package with a simple CLI because of OpenAPI Specification which 
@@ -200,9 +200,9 @@ detected as anomalies.
 
 From model training perspective, gas_cost feature doesn't seem to have much effect in determining anomalous transactions.
 There is room for improvement for the feature engineering part, for example total supply of the traded token can be added as
-a feature. The source of this intuition is [here](https://ethereum.org/en/guides/how-to-id-scam-tokens/). Moreover, the 
-`contamination` parameter can be adjusted so that the model identifies more anomalous transactions. However, that might bring 
-the potential to increase false positives.
+a feature and experiment further. The source of this intuition is [here](https://ethereum.org/en/guides/how-to-id-scam-tokens/). Moreover, the `contamination` parameter 
+can be adjusted so that the model identifies more anomalous transactions. However, that might bring the potential to 
+increase false positives.
 
 From the implementation perspective following can be improved:
 - don't expose API key, store it in a secret manager and retrieve the key from there
@@ -217,7 +217,7 @@ the entire transaction route.
 class AnomalyDetectionOutput(BaseModel):
     transaction_hash: str
     token2value: dict[str, float] # contains all tokens and values that transaction goes through
-    gas_cost: str
+    gas_cost: str # in ETH
     anomaly_score: str
     etherscan_link: str
 ```
