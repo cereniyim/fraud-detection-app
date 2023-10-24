@@ -49,7 +49,7 @@ The app accepts 4 parameters:
 To get the data with the block range set `start_block` and `end_block`. `start_block` must be smaller than or equal to 
 `end_block` and boundaries are inclusive.
 
-To get the data with the time interval, set `time_interval_in_seconds` to an integer greater than 0. This will override 
+To get the data within the time interval, set `time_interval_in_seconds` to an integer greater than 0. This will override 
 using the app with the block range and get the latest blocks within the specified seconds approximately.
 
 To use a pre-trained model, set `use_pre_trained_model` to `true`. This will load the latest model from the model registry.
@@ -72,8 +72,8 @@ The app returns a list of dictionaries as an output, an example is as follows
   }
 ]
 ```
-Each dictionary item in the output is unique per `transaction_hash` and `token`, so you might get duplicate transactions 
-in the results.
+Each item in the list is unique per `transaction_hash` and `token`, so you might get duplicate transactions in the 
+results.
 
 **To stop the app**
 ```shell script
@@ -108,7 +108,7 @@ When we filter by the anomaly-labeled transactions, we get transactions with pot
 
 where there are only a few holders of those tokens and they usually worth nothing. 
 
-Etherscan also labels tokens as trusted or untrusted in a more granular level ([here](https://info.etherscan.com/etherscan-token-reputation/)), 
+Etherscan also labels tokens as trusted or untrusted in a more granular level [here](https://info.etherscan.com/etherscan-token-reputation/), 
 this model is able to identify tokens with "UNKNOWN" reputation.
 
 Since our dataset is indexed by unique transaction_hash and token, the model only detects a certain leg of the transaction 
@@ -121,8 +121,8 @@ the aim of the app is to identify transactions with untrusted tokens, so that us
 ![anomalous_txs.png](images/anomalous_txs.png)
 
 ## My Approach on Solving the Challenge and Key Architectural Decisions
-While working on the challenge I kept my focus on having a reasonably working anomaly detection MVP product with a readable 
-and high-quality code, within the more or less specified time-box.
+While working on the challenge, I kept my focus on having a reasonably-working-well anomaly detection MVP app with a readable 
+and high-quality code.
 
 Querying for every transaction on Ethereum Mainnet seemed suboptimal since a transaction can also be a mint, burn or 
 contract creation and so on. So, I started by narrowing down the problem scope to use ERC20 token transfers only.
@@ -137,20 +137,20 @@ because it offers endpoints for efficient querying and filtering of Ethereum tra
 I used [getAssetTransfers](https://docs.alchemy.com/reference/alchemy-getassettransfers) endpoint to get ERC20 token transfers. I also excluded internal transactions so that I 
 only get transactions initiated by the users.
 
-To get each gas spent for the transactions I used [getTransactionReceipts](https://docs.alchemy.com/reference/alchemy-gettransactionreceipts) endpoint. From that endpoint, I used 
+To get each gas spent for the transactions, I used [getTransactionReceipts](https://docs.alchemy.com/reference/alchemy-gettransactionreceipts) endpoint. From that endpoint, I used 
 `gasUsed` and `effectiveGasPrice` to calculate gas cost. After loading the transactions, I extracted the `gas_cost` 
 feature by multiplying the two.
 
 ### Isolation forest as the underlying algorithm
 I researched on the anomaly detection problem first and most common statistical approaches used. Given the above features, 
-I decided to approach this problem as an unsupervised machine learning problem. I chose Isolation Forest because of its 
-decision tree-based, non-parametric and easy-to-understand nature.
+I decided to approach this problem as an unsupervised machine learning problem. I chose Isolation Forest ensemble model 
+because of its decision-tree-based, non-parametric and easy-to-understand nature.
 
 I used [this blog post](https://towardsdatascience.com/isolation-forest-the-anomaly-detection-algorithm-any-data-scientist-should-know-1a99622eec2d) and read [the original paper](https://www.researchgate.net/publication/224384174_Isolation_Forest) to understand how algorithm works.
 
-The algorithm focuses on detecting and isolating anomalous samples in a decision tree as early as possible. The algorithm
-starts by randomly selecting a feature from the dataset. It then chooses a random value within the range of that feature. 
-This value serves as a threshold. 
+The algorithm focuses on detecting and isolating anomalous samples in a decision tree as early as possible. Each tree is 
+constructed with a subset of dataset. The algorithm starts by randomly selecting a feature from the dataset. It then 
+chooses a random value within the range of that feature. This value serves as a threshold. 
 
 Then, the algorithm uses this threshold to split samples. Samples on one side of the threshold are grouped together, 
 and samples on the other side are grouped separately.
@@ -179,6 +179,7 @@ of anomalies are expected for the domain problem.
 ### Local filesystem as a model registry
 Requirements mentioned that users can predict using the latest pre-trained model, so I used the local filesystem as the 
 model registry. Each trained model is indexed by timestamp and saved in the app by `AnomalyDetector.fit_and_save_model`.
+When users request pre-trained model, latest model is loaded from the local filesystem and predictions are generated.
 
 Considering the time-box specification of the assignment, I chose the local filesystem to show how a model registry 
 could be integrated into the app to satisfy this requirement. 
@@ -187,8 +188,8 @@ could be integrated into the app to satisfy this requirement.
 I wrapped the core data loading and model training & inference process in an API endpoint. Moreover, I used fastAPI as 
 the framework because of its nice documentation and default data validation capabilities.
 
-I preferred an API endpoint over making a Python package with a simple CLI because of OpenAPI specification which 
-provide self-explanatory documentation. I used Docker to create the required environment and to run the app so that it 
+I preferred an API endpoint over making a Python package with a simple CLI because of OpenAPI Specification which 
+provides self-explanatory documentation. I used Docker to create the required environment and run the app so that it 
 is installable on any local or virtual machine.
 
 ## Further System Improvements
@@ -204,11 +205,12 @@ a feature. The source of this intuition is [here](https://ethereum.org/en/guides
 the potential to increase false positives.
 
 From the implementation perspective following can be improved:
-- don't expose API key store it in a secret manager and retrieve the key from there
-- pre-process data in a separate class so that `AnomalyDetector` have single responsibility around the model training and inference
+- don't expose API key, store it in a secret manager and retrieve the key from there
+- pre-process data in a separate class so that `AnomalyDetector` have single responsibility around the model training 
+and generating predictions
 - implement more detailed data validation and error handling logic (e.g. checking for the logical ordering of 
-start_block and end_block parameters and raise 400 Bad request if it is not logically ordered)
-- aggregate app return results by transaction_hash so that it is not repeated This can be achieved by refactoring 
+start_block and end_block parameters and raise 400 Bad Request if it is not logically ordered)
+- aggregate app return results by transaction_hash so that it is not repeated. This can be achieved by refactoring 
 `AnomalyDetectionOutput` to store token symbol mapping to transaction value per token. This way users can also display 
 the entire transaction route.
 ```python
@@ -223,17 +225,19 @@ class AnomalyDetectionOutput(BaseModel):
 
 ## For Developers
 ### Project organization
-    ├── README.md                         <- The top-level README explainin the project
+    ├── README.md                         <- The top-level README explaining the project
     ├── anomaly_detection                 <- Anomaly detection core implementation
-    │   ├── anomaly_detector.py           <- Feature engineering and model training and inference class
+    │   ├── anomaly_detector.py           <- Data processing and anomaly detection class
     │   ├── transaction_loader.py         <- Transaction loading class
     ├── app                               <- fastAPI app
-    │   ├── data_models.py                <- Input & output model classes required for the endpoint
+    │   ├── data_models.py                <- Input & output model classes for the endpoint
     │   ├── main.py                       <- Endpoint implementation
     ├── images                            <- Images used in the README
     ├── Dockerfile                        <- Dockerfile to create anomaly-detection-app image
     ├── notebooks                         <- Model exploration notebooks
     ├── tests                             <- Unit tests
+    ├── .gitignore                        <- Ignored files by git
+    ├── requirements.txt                  <- Required Python packages for the environment creation
 
 ### Setup local environment & run unit tests
 Change directory to your local repository
@@ -267,7 +271,7 @@ py.test tests
 ```
 
 ### Update environment to run  the notebook
-To run notebooks update environment with the following commands
+To run the notebook update environment with the following commands
 ```
 pip install jupyter
 pip install plotly
