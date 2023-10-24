@@ -12,6 +12,7 @@ class TransactionLoadingError(Exception):
 
 
 _BLOCK_PER_SECOND = 5 / 60
+# approximation of number of blocks created within a second, 12 seconds set as average block time
 
 
 class TransactionLoader:
@@ -33,16 +34,21 @@ class TransactionLoader:
         """
         Loads ERC20 and external Transfer transactions from Ethereum Mainnet either for the
             - given block range
-            - latest blocks within the specified time interval
+            - latest blocks within the specified time interval ~ approximately
 
         Parameters
         ----------
         start_block: Optional[int]
-            lower bound block number
+            lower bound block number (inclusive)
         end_block: Optional[int]
             upper bound block number (inclusive)
         time_interval: Optional[int]
             time interval in seconds
+
+        Raises
+        -------
+        TransactionLoadingError
+            If any of the requests to Alchemy endpoints fail
 
         Returns
         -------
@@ -68,6 +74,8 @@ class TransactionLoader:
             self._handle_response_errors(block_response)
             latest_block_number = int(block_response.json()["result"], base=16)
             end_block = latest_block_number - 1
+            # alchemy_getTransactionReceipts endpoint fails time to time for the latest block
+            # to prevent fallback to latest_block - 1
             start_block = end_block - last_blocks + 1
         transfer_txs = self._get_transfer_txs(start_block, end_block)
         tx_gas = self._get_gas_values(start_block, end_block)

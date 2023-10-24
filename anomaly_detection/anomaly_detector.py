@@ -22,7 +22,7 @@ class ModelMetaData:
 
 
 class AnomalyDetector:
-    def __init__(self, estimator=None):
+    def __init__(self, estimator: IsolationForest = None):
         self._estimator = estimator or IsolationForest(
             random_state=42,
             contamination=0.001,
@@ -30,10 +30,24 @@ class AnomalyDetector:
         self._features = ["value", "gas_cost_in_eth"]
         self._models_directory = Path(__file__).parents[0] / "models"
         if not self._models_directory.exists():
-            # local filesystem serves as a registry, so create the directory upon instantiation
+            # local filesystem serves as a model registry, so create the directory upon instantiation
             os.mkdir(self._models_directory)
 
     def fit_and_save_model(self, data: pd.DataFrame) -> ModelMetaData:
+        """
+        Fit the anomaly detection model with the input data and save it to model registry
+
+        Parameters
+        ----------
+        data: pd.DataFrame
+            must have `value` and `gas_cost_in_eth` columns
+
+        Returns
+        -------
+        ModelMetaData: Metadata for the fitted model
+            stores the fitted estimator and the model_path
+
+        """
         features = data[self._features]
         fitted_estimator = self._estimator.fit(features)
         timestamp = int(datetime.now().timestamp())
@@ -49,6 +63,30 @@ class AnomalyDetector:
         model_metadata: ModelMetaData = None,
         use_pre_trained_model: bool = False,
     ) -> pd.DataFrame:
+        """
+        Generate predictions to detect anomalous transactions using input data and an estimator. If `use_pre_trained_model`
+        is True, then the latest model is loaded from the registry and used. Otherwise, `ModelMetaData.fitted_estimator`
+        is used.
+
+        Parameters
+        ----------
+        data: pd.DataFrame
+            must have `value` and  `gas_cost_in_eth` columns
+        model_metadata: ModelMetaData
+        use_pre_trained_model: bool
+            default False
+
+        Raises
+        -------
+        ModelLoadingError
+            If no models are available in the model registry
+
+        Returns
+        -------
+        data: pd.DataFrame with `anomaly` and `anomaly_score` columns added
+            labeled data as anomalous or not, `anomaly` is equal to -1 for the anomalous data
+
+        """
         models = os.listdir(self._models_directory)
         if use_pre_trained_model and len(models) == 0:
             raise ModelLoadingError(
@@ -72,12 +110,28 @@ class AnomalyDetector:
 
     @staticmethod
     def process_data(tx_data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Processes input data
+            - removes rows with at least one NA value
+            - drops duplicate rows
+            - adds `gas_cost_in_eth` feature to data
+
+        Parameters
+        ----------
+        tx_data: pd.DataFrame
+            must have `token`, `value`, `gas_used` and `gas_price` columns
+
+        Returns
+        -------
+        tx_data: pd.DataFrame
+
+        """
         tx_data = tx_data.dropna(
             subset=["token", "value", "gas_used", "gas_price"], how="any"
         )
         tx_data = tx_data.drop_duplicates().reset_index(
             drop=True
-        )  # just in case data has any duplicates
+        )  # just in case, if data has any duplicates
         tx_data["gas_cost_in_eth"] = (
             tx_data["gas_used"] * tx_data["gas_price"]
         ) / _WEI_TO_ETH
