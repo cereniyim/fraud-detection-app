@@ -38,7 +38,7 @@ class TransactionLoader:
         Parameters
         ----------
         start_block: Optional[int]
-            lower bound block number
+            lower bound block number (inclusive)
         end_block: Optional[int]
             upper bound block number (inclusive)
         time_interval: Optional[int]
@@ -47,7 +47,7 @@ class TransactionLoader:
         Raises
         -------
         TransactionLoadingError
-            If any of the requests to Alchemy fails
+            If any of the requests to Alchemy endpoints fail
 
         Returns
         -------
@@ -74,7 +74,7 @@ class TransactionLoader:
             latest_block_number = int(block_response.json()["result"], base=16)
             end_block = latest_block_number - 1
             # alchemy_getTransactionReceipts endpoint fails time to time for the latest block
-            # to prevent that we fallback to latest_block -1
+            # to prevent fallback to latest_block -1
             start_block = end_block - last_blocks + 1
         transfer_txs = self._get_transfer_txs(start_block, end_block)
         tx_gas = self._get_gas_values(start_block, end_block)

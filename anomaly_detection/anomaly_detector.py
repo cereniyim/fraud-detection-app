@@ -35,12 +35,12 @@ class AnomalyDetector:
 
     def fit_and_save_model(self, data: pd.DataFrame) -> ModelMetaData:
         """
-        Fit the anomaly detection model to the provided data and save it
+        Fit the anomaly detection model with the input data and save it
 
         Parameters
         ----------
         data: pd.DataFrame
-            must have `value`and `gas_cost_in_eth` columns
+            must have `value` and `gas_cost_in_eth` columns
 
         Returns
         -------
@@ -64,15 +64,14 @@ class AnomalyDetector:
         use_pre_trained_model: bool = False,
     ) -> pd.DataFrame:
         """
-        Perform anomaly detection on the input data using the fitted model. If `use_pre_trained_model` is True, then the
-        latest model is loaded from the registry. Otherwise, ModelMetaData.fitted_estimator is used.
+        Generate predictions for anomaly detection using input data. If `use_pre_trained_model` is True, then the
+        latest model is loaded from the registry and used. Otherwise, `ModelMetaData.fitted_estimator` is used.
 
         Parameters
         ----------
         data: pd.DataFrame
-            must have `value`and  `gas_cost_in_eth` columns
+            must have `value` and  `gas_cost_in_eth` columns
         model_metadata: ModelMetaData
-
         use_pre_trained_model: bool
             default False
 
@@ -84,7 +83,7 @@ class AnomalyDetector:
         Returns
         -------
         data: pd.DataFrame with `anomaly` and `anomaly_score` columns added
-            labeled data as anomalous or not, `anomaly_score`is equal to -1 for the anomalous data
+            labeled data as anomalous or not, `anomaly` is equal to -1 for the anomalous data
 
         """
         models = os.listdir(self._models_directory)
@@ -111,7 +110,7 @@ class AnomalyDetector:
     @staticmethod
     def process_data(tx_data: pd.DataFrame) -> pd.DataFrame:
         """
-        Processed data
+        Processes input data
             - removes rows with at least one NA value
             - drops duplicate rows
             - adds `gas_cost_in_eth` feature to data
@@ -119,6 +118,7 @@ class AnomalyDetector:
         Parameters
         ----------
         tx_data: pd.DataFrame
+            must have `token`, `value`, `gas_used` and `gas_price` columns
 
         Returns
         -------
