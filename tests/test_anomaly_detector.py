@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 import pandas as pd
 import pandas.testing as pdt
@@ -70,6 +71,7 @@ def test_fit_and_save_model(processed_data):
     assert isinstance(res, ModelMetaData)
     assert isinstance(res.estimator, IsolationForest)
     assert isinstance(res.model_path, str)
+    assert Path(res.model_path).exists()
 
 
 @pytest.mark.usefixtures("remove_models")

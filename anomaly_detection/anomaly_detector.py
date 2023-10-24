@@ -22,7 +22,7 @@ class ModelMetaData:
 
 
 class AnomalyDetector:
-    def __init__(self, estimator=None):
+    def __init__(self, estimator: IsolationForest = None):
         self._estimator = estimator or IsolationForest(
             random_state=42,
             contamination=0.001,
@@ -30,12 +30,12 @@ class AnomalyDetector:
         self._features = ["value", "gas_cost_in_eth"]
         self._models_directory = Path(__file__).parents[0] / "models"
         if not self._models_directory.exists():
-            # local filesystem serves as a registry, so create the directory upon instantiation
+            # local filesystem serves as a model registry, so create the directory upon instantiation
             os.mkdir(self._models_directory)
 
     def fit_and_save_model(self, data: pd.DataFrame) -> ModelMetaData:
         """
-        Fit the anomaly detection model with the input data and save it
+        Fit the anomaly detection model with the input data and save it to model registry
 
         Parameters
         ----------
@@ -64,8 +64,8 @@ class AnomalyDetector:
         use_pre_trained_model: bool = False,
     ) -> pd.DataFrame:
         """
-        Generate predictions for anomaly detection using input data. If `use_pre_trained_model` is True, then the
-        latest model is loaded from the registry and used. Otherwise, `ModelMetaData.fitted_estimator` is used.
+        Generate predictions for detecting anomalous transactions using input data. If `use_pre_trained_model` is True,
+        then the latest model is loaded from the registry and used. Otherwise, `ModelMetaData.fitted_estimator` is used.
 
         Parameters
         ----------
@@ -130,7 +130,7 @@ class AnomalyDetector:
         )
         tx_data = tx_data.drop_duplicates().reset_index(
             drop=True
-        )  # just in case data has any duplicates
+        )  # just in case, if data has any duplicates
         tx_data["gas_cost_in_eth"] = (
             tx_data["gas_used"] * tx_data["gas_price"]
         ) / _WEI_TO_ETH
