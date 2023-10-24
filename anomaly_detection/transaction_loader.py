@@ -12,6 +12,7 @@ class TransactionLoadingError(Exception):
 
 
 _BLOCK_PER_SECOND = 5 / 60
+# approximation of number of blocks created within a second, 12 seconds set as average block time
 
 
 class TransactionLoader:
@@ -74,7 +75,7 @@ class TransactionLoader:
             latest_block_number = int(block_response.json()["result"], base=16)
             end_block = latest_block_number - 1
             # alchemy_getTransactionReceipts endpoint fails time to time for the latest block
-            # to prevent fallback to latest_block -1
+            # to prevent fallback to latest_block - 1
             start_block = end_block - last_blocks + 1
         transfer_txs = self._get_transfer_txs(start_block, end_block)
         tx_gas = self._get_gas_values(start_block, end_block)

@@ -264,7 +264,7 @@ def test_load():
 @pytest.mark.skip(reason="requires internet connection")
 def test_load_integration():
     loader = TransactionLoader()
-    res = loader.load(start_block=18362260, end_block=18362263)  # query for 3 blocks
+    res = loader.load(start_block=18362260, end_block=18362263)
 
     assert isinstance(res, pd.DataFrame)
     assert len(res) > 0
@@ -283,7 +283,6 @@ def test_load_integration_time_interval():
 def test_load_integration_with_pagination():
     start_block = 18183000
     end_block = 18183050
-    # runs in a minute
     loader = TransactionLoader()
     res = loader.load(start_block=start_block, end_block=end_block)
 
