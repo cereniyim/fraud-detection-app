@@ -17,7 +17,7 @@ app = FastAPI(
 
 
 @app.post("/anomaly_detection/")
-def post_item(
+def detect_anomalies(
     anomaly_detection_input: AnomalyDetectionInput,
 ) -> list[AnomalyDetectionOutput]:
     """
