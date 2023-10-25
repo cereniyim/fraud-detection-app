@@ -10,7 +10,7 @@ The app identifies such transactions so that users are prevented from interactin
 
 ![app_flow](images/app_flow.png)
 
-You can interact with an app through the Swagger (link provided below) or curl requests from the command line.
+You can interact with the app through the Swagger (link provided below) or curl requests from the command line.
 
 ## How to Install and Use
 **Pre-requisites**: Docker engine running locally. You can find the instructions [here](https://docs.docker.com/engine/install/)
@@ -53,7 +53,8 @@ To get the data within the time interval, set `time_interval_in_seconds` to an i
 using the app with the block range and get the latest blocks within the specified seconds approximately.
 
 To use a pre-trained model, set `use_pre_trained_model` to `true`. This will load the latest model from the model registry.
-Model training is required upon start.
+Model training is required upon start. When `use_pre_trained_model` is `false`, loaded data is used for both training 
+and anomaly detection.
 
 After loading the data, the model is trained with 2 features:
 - transaction value per token
@@ -111,7 +112,7 @@ where there are only a few holders of those tokens and they usually worth nothin
 Etherscan also labels tokens as trusted or untrusted in a more granular level [here](https://info.etherscan.com/etherscan-token-reputation/), 
 this model is able to identify tokens with "UNKNOWN" reputation.
 
-Since our dataset is indexed by unique transaction_hash and token, the model only detects a certain leg of the transaction 
+Since datasets are indexed by unique transaction_hash and token, the model only detects a certain leg of the transaction 
 as anomalous, even though trusted tokens are part of the transaction. For instance, [this transaction](https://etherscan.io/tx/0x51949a40deeb804fdc686e2504914c3f37063b1d5b628b5639fae57fa8a54c75) 
 consists of trusted tokens and the POKEMON 2.0 token: USDT -> WETH -> POKEMON 2.0
 
@@ -124,8 +125,8 @@ the aim of the app is to identify transactions with untrusted tokens, so that us
 While working on the challenge, I kept my focus on having a reasonably-working-well anomaly detection MVP app with a readable 
 and high-quality code.
 
-Querying for every transaction on Ethereum Mainnet seemed suboptimal since a transaction can also be a mint, burn or 
-contract creation and so on. So, I started by narrowing down the problem scope to use ERC20 token transfers only.
+Querying for every transaction on Ethereum Mainnet seemed suboptimal since a transaction can be any contract method call 
+(mint, burn etc.). So, I started by narrowing down the problem scope to use ERC20 token transfers only.
 
 Moreover, since "better than a random" model is emphasized in the requirements, I only included 2 features: the value of 
 the transaction per token and gas cost in ETH.
@@ -199,13 +200,13 @@ those capabilities. A database would store the training and inference datasets, 
 detected as anomalies.
 
 From model training perspective, gas_cost feature doesn't seem to have much effect in determining anomalous transactions.
-There is room for improvement for the feature engineering part, for example total supply of the traded token can be added as
-a feature and experiment further. The source of this intuition is [here](https://ethereum.org/en/guides/how-to-id-scam-tokens/). Moreover, the `contamination` parameter 
+There is room for improvement for the feature engineering part. For example, total supply of the traded token can be 
+added as a feature. The source of this intuition is [here](https://ethereum.org/en/guides/how-to-id-scam-tokens/). Moreover, the `contamination` parameter 
 can be adjusted so that the model identifies more anomalous transactions. However, that might bring the potential to 
 increase false positives.
 
 From the implementation perspective following can be improved:
-- don't expose API key, store it in a secret manager and retrieve the key from there
+- don't expose API key in the repository, store it in a secret manager and retrieve the key from there
 - pre-process data in a separate class so that `AnomalyDetector` have single responsibility around the model training 
 and generating predictions
 - implement more detailed data validation and error handling logic (e.g. checking for the logical ordering of 
