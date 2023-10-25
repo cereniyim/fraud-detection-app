@@ -10,7 +10,7 @@ The app identifies such transactions so that users are prevented from interactin
 
 ![app_flow](images/app_flow.png)
 
-You can interact with an app through the Swagger (link provided below) or curl requests.
+You can interact with an app through the Swagger (link provided below) or curl requests from the command line.
 
 ## How to Install and Use
 **Pre-requisites**: Docker engine running locally. You can find the instructions [here](https://docs.docker.com/engine/install/)
@@ -25,9 +25,9 @@ docker build -t anomaly-detection-app:0.0.1 .
 ```shell script
 docker run -d -p 8000:8000 anomaly-detection-app:0.0.1
 ```
-You can access the app and its documentation on Swagger http://0.0.0.0:8000/docs or interact with it from CLI.
+You can access the app and its documentation on Swagger http://0.0.0.0:8000/docs or interact with it from command line.
 
-**Interact from CLI**
+**Interact from command line**
 ```shell script
 curl -X 'POST' \
   'http://0.0.0.0:8000/anomaly_detection/' \
